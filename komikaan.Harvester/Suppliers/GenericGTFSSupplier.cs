@@ -12,6 +12,7 @@ public class GenericGTFSSupplier : ISupplier
     {
         _supplierConfig = supplierConfig;
     }
+
     public Task<GTFSFeed> GetFeedAsync()
     {
         var reader = new GTFSReader<GTFSFeed>(false, _supplierConfig.Name);
@@ -19,7 +20,7 @@ public class GenericGTFSSupplier : ISupplier
 
         foreach (var agency in feed.Agencies)
         {
-            Console.WriteLine(agency.Name);
+            Console.WriteLine("An agency found in this data supplier: {0}", agency.Name);
         }
         Console.WriteLine($"Found a feed with {feed.Agencies.Count} agencies");
         return Task.FromResult(feed);
