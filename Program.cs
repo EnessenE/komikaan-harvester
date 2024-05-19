@@ -1,3 +1,10 @@
+using System.Reflection;
+using komikaan.Harvester.Contexts;
+using komikaan.Harvester.Factories;
+using komikaan.Harvester.Interfaces;
+using komikaan.Harvester.Managers;
+using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 namespace komikaan.Harvester
 {
@@ -7,6 +14,18 @@ namespace komikaan.Harvester
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            builder.Configuration.AddEnvironmentVariables();
+
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.Console()
+                .CreateLogger();
+
+            builder.Host.UseSerilog();
+            Log.Logger.Information("Starting {app} {version} - {env}",
+                Assembly.GetExecutingAssembly().GetName().Name,
+                Assembly.GetExecutingAssembly().GetName().Version,
+                builder.Environment.EnvironmentName);
+
             // Add services to the container.
 
             builder.Services.AddControllers();
@@ -14,6 +33,15 @@ namespace komikaan.Harvester
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+
+            AddSuppliers(builder.Services);
+
+            AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
+            builder.Services.AddHostedService<HarvestingManager>();
+            builder.Services.AddSingleton<IDataContext, PostgresContext>();
+            builder.Services.AddDbContext<GTFSContext>(options =>
+                options.UseNpgsql(builder.Configuration.GetConnectionString("HarvestingTarget")), optionsLifetime: ServiceLifetime.Singleton, contextLifetime: ServiceLifetime.Singleton);
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -26,11 +54,17 @@ namespace komikaan.Harvester
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
-
+            app.UseSerilogRequestLogging();
 
             app.MapControllers();
 
             app.Run();
+        }
+
+        private static void AddSuppliers(IServiceCollection serviceCollection)
+        {
+            var factory = new SupplierFactory(serviceCollection);
+            factory.AddSuppliers();
         }
     }
 }

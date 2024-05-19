@@ -1,6 +1,0 @@
-@komikaan.Harvester_HostAddress = http://localhost:5143
-
-GET {{komikaan.Harvester_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
