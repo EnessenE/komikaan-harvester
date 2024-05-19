@@ -14,7 +14,7 @@ public class GenericGTFSSupplier : ISupplier
     }
     public Task<GTFSFeed> GetFeedAsync()
     {
-        var reader = new GTFSReader<GTFSFeed>(false);
+        var reader = new GTFSReader<GTFSFeed>(false, _supplierConfig.Name);
         var feed = reader.Read(_supplierConfig.Url);
 
         foreach (var agency in feed.Agencies)
