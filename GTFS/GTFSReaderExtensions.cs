@@ -63,6 +63,8 @@ namespace GTFS
         /// <returns>The GTFS feed.</returns>
         public static T Read<T>(this GTFSReader<T> reader, string path, char? separator = null) where T : IGTFSFeed, new()
         {
+
+            Console.WriteLine("Reading {0}", path);
             if (path == null) throw new ArgumentNullException(nameof(path));
 
             if (Directory.Exists(path))

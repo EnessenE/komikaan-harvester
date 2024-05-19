@@ -99,6 +99,8 @@ namespace GTFS
             this.TimeOfDayWriter = (timeOfDay) => { throw new NotImplementedException(); };
 
             // initialize maps.
+
+            Console.WriteLine("Initializing field maps");
             this.AgencyMap = new FieldMap();
             this.CalendarDateMap = new FieldMap();
             this.CalendarMap = new FieldMap();
@@ -114,6 +116,7 @@ namespace GTFS
             this.TripMap = new FieldMap();
             this.LevelMap = new FieldMap();
             this.PathwayMap = new FieldMap();
+            Console.WriteLine("Field maps created");
         }
 
         /// <summary>
@@ -192,6 +195,7 @@ namespace GTFS
         /// <returns></returns>
         public T Read(T feed, IEnumerable<IGTFSSourceFile> source)
         {
+            Console.WriteLine("Reading started");
             source = source.ToArray(); // optimization in order not to enumerate multiple times
 
             // check if all required files are present.
@@ -233,6 +237,7 @@ namespace GTFS
                 {
                     if (!readFiles.Contains(file.Name))
                     {
+                        Console.WriteLine("Reading file {0}", file.Name);
                         // file has not been read yet!
                         HashSet<string> dependencies = null;
                         if (!dependencyTree.TryGetValue(file.Name, out dependencies))
@@ -251,6 +256,8 @@ namespace GTFS
                                 break;
                             }
                         }
+
+                        Console.WriteLine("Finished reading file {0}", file.Name);
                     }
                 }
 
