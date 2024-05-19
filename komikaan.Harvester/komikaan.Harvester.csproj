@@ -25,4 +25,8 @@
     <PackageReference Include="Z.EntityFramework.Extensions.EFCore" Version="8.102.2.4" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\GTFS\GTFS.csproj" />
+  </ItemGroup>
+
 </Project>
