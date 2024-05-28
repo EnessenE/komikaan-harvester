@@ -12,15 +12,15 @@ using komikaan.Harvester.Contexts;
 namespace komikaan.Harvester.Migrations
 {
     [DbContext(typeof(GTFSContext))]
-    [Migration("20240311161940_Shapes")]
-    partial class Shapes
+    [Migration("20240528211617_GeneralDatabase")]
+    partial class GeneralDatabase
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.2")
+                .HasAnnotation("ProductVersion", "8.0.5")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -29,6 +29,11 @@ namespace komikaan.Harvester.Migrations
                 {
                     b.Property<string>("Id")
                         .HasColumnType("text");
+
+                    b.Property<string>("DataOrigin")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Email")
                         .HasColumnType("text");
@@ -53,6 +58,10 @@ namespace komikaan.Harvester.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DataOrigin");
+
+                    b.HasIndex("Id", "Name");
+
                     b.ToTable("agencies");
                 });
 
@@ -60,6 +69,11 @@ namespace komikaan.Harvester.Migrations
                 {
                     b.Property<string>("ServiceId")
                         .HasColumnType("text");
+
+                    b.Property<string>("DataOrigin")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<DateTimeOffset>("EndDate")
                         .HasColumnType("timestamp with time zone");
@@ -93,6 +107,8 @@ namespace komikaan.Harvester.Migrations
 
                     b.HasKey("ServiceId");
 
+                    b.HasIndex("DataOrigin");
+
                     b.ToTable("calenders");
                 });
 
@@ -100,6 +116,11 @@ namespace komikaan.Harvester.Migrations
                 {
                     b.Property<string>("Id")
                         .HasColumnType("text");
+
+                    b.Property<string>("DataOrigin")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<DateTimeOffset>("Date")
                         .HasColumnType("timestamp with time zone");
@@ -112,11 +133,18 @@ namespace komikaan.Harvester.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DataOrigin");
+
                     b.ToTable("calendar_dates");
                 });
 
             modelBuilder.Entity("GTFS.Entities.Frequency", b =>
                 {
+                    b.Property<string>("DataOrigin")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<string>("EndTime")
                         .HasColumnType("text");
 
@@ -132,6 +160,8 @@ namespace komikaan.Harvester.Migrations
                     b.Property<string>("TripId")
                         .HasColumnType("text");
 
+                    b.HasIndex("DataOrigin");
+
                     b.ToTable("frequencies");
                 });
 
@@ -145,6 +175,11 @@ namespace komikaan.Harvester.Migrations
 
                     b.Property<int?>("Color")
                         .HasColumnType("integer");
+
+                    b.Property<string>("DataOrigin")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
@@ -166,6 +201,8 @@ namespace komikaan.Harvester.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DataOrigin");
+
                     b.ToTable("routes");
                 });
 
@@ -173,6 +210,11 @@ namespace komikaan.Harvester.Migrations
                 {
                     b.Property<string>("Id")
                         .HasColumnType("text");
+
+                    b.Property<string>("DataOrigin")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<double?>("DistanceTravelled")
                         .HasColumnType("double precision");
@@ -188,6 +230,8 @@ namespace komikaan.Harvester.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DataOrigin");
+
                     b.ToTable("shapes");
                 });
 
@@ -198,6 +242,11 @@ namespace komikaan.Harvester.Migrations
 
                     b.Property<string>("Code")
                         .HasColumnType("text");
+
+                    b.Property<string>("DataOrigin")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
@@ -237,6 +286,8 @@ namespace komikaan.Harvester.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DataOrigin");
+
                     b.ToTable("stops");
                 });
 
@@ -245,11 +296,16 @@ namespace komikaan.Harvester.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
-                    b.Property<string>("ArrivalTime")
-                        .HasColumnType("text");
+                    b.Property<TimeOnly?>("ArrivalTime")
+                        .HasColumnType("time without time zone");
 
-                    b.Property<string>("DepartureTime")
-                        .HasColumnType("text");
+                    b.Property<string>("DataOrigin")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<TimeOnly?>("DepartureTime")
+                        .HasColumnType("time without time zone");
 
                     b.Property<int?>("DropOffType")
                         .HasColumnType("integer");
@@ -277,6 +333,8 @@ namespace komikaan.Harvester.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DataOrigin");
+
                     b.ToTable("stop_times");
                 });
 
@@ -284,6 +342,11 @@ namespace komikaan.Harvester.Migrations
                 {
                     b.Property<string>("Id")
                         .HasColumnType("text");
+
+                    b.Property<string>("DataOrigin")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("FromStopId")
                         .HasColumnType("text");
@@ -299,6 +362,8 @@ namespace komikaan.Harvester.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DataOrigin");
+
                     b.ToTable("transfers");
                 });
 
@@ -312,6 +377,11 @@ namespace komikaan.Harvester.Migrations
 
                     b.Property<string>("BlockId")
                         .HasColumnType("text");
+
+                    b.Property<string>("DataOrigin")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<int?>("Direction")
                         .HasColumnType("integer");
@@ -332,6 +402,8 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DataOrigin");
 
                     b.ToTable("trips");
                 });

@@ -1408,11 +1408,11 @@ namespace GTFS
                     stopTime.TripId = this.ParseFieldString(header.Name, fieldName, value);
                     break;
                 case "arrival_time":
-                    stopTime.ArrivalTime = this.ReadTimeOfDay(header.Name, fieldName,
+                    stopTime.InternalArrivalTime = this.ReadTimeOfDay(header.Name, fieldName,
                         this.ParseFieldString(header.Name, fieldName, value));
                     break;
                 case "departure_time":
-                    stopTime.DepartureTime = this.ReadTimeOfDay(header.Name, fieldName,
+                    stopTime.InternalDepartureTime = this.ReadTimeOfDay(header.Name, fieldName,
                         this.ParseFieldString(header.Name, fieldName, value));
                     break;
                 case "stop_id":
