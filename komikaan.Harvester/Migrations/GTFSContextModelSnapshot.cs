@@ -293,16 +293,16 @@ namespace komikaan.Harvester.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
-                    b.Property<string>("ArrivalTime")
-                        .HasColumnType("text");
+                    b.Property<TimeOnly?>("ArrivalTime")
+                        .HasColumnType("time without time zone");
 
                     b.Property<string>("DataOrigin")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<string>("DepartureTime")
-                        .HasColumnType("text");
+                    b.Property<TimeOnly?>("DepartureTime")
+                        .HasColumnType("time without time zone");
 
                     b.Property<int?>("DropOffType")
                         .HasColumnType("integer");

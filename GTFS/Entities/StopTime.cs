@@ -41,7 +41,9 @@ namespace GTFS.Entities
         private string poorMansId { get; set; }
 
         [Key]
-        public string Id { get => $"{TripId}_{ArrivalTime}_{StopId}";
+        public string Id
+        {
+            get => $"{TripId}_{InternalArrivalTime}_{StopId}";
             set => poorMansId = value;
         }
 
@@ -56,19 +58,85 @@ namespace GTFS.Entities
             set => _tripId = string.Intern(value);
         }
 
+        private TimeOfDay? _internalArrivalTime { get; set; }
+
         /// <summary>
         /// Gets or sets the arrival time at a specific stop for a specific trip on a route. The time is measured from "noon minus 12h" (effectively midnight, except for days on which daylight savings time changes occur) at the beginning of the service date. For times occurring after midnight on the service date, enter the time as a value greater than 24:00:00 in HH:MM:SS local time for the day on which the trip schedule begins. If you don't have separate times for arrival and departure at a stop, enter the same value for arrival_time and departure_time.
         /// </summary>
         [Attributes.Required]
         [FieldName("arrival_time")]
-        public TimeOfDay? ArrivalTime { get; set; }
+        [NotMapped]
+        internal TimeOfDay? InternalArrivalTime
+        {
+            get => _internalArrivalTime; set
+            {
+                if (value != null)
+                {
+                    var hours = value.Value.Hours;
+                    if (hours >= 24)
+                    {
+                        hours = 0;
+                    }
+                    _arrivalTime = new TimeOnly(hours, value.Value.Minutes, value.Value.Seconds);
+                    _internalArrivalTime = value;
+                }
+            }
+        }
+
+        private TimeOnly? _arrivalTime { get; set; }
+
+        [Column(TypeName = "time without time zone")]
+        public TimeOnly? ArrivalTime
+        {
+            get
+            {
+                return _arrivalTime;
+            }
+            set
+            {
+                _arrivalTime = value;
+            }
+        }
+
+        private TimeOfDay? _internalDepartureTime { get; set; }
 
         /// <summary>
         /// Gets or sets the departure time from a specific stop for a specific trip on a route. The time is measured from "noon minus 12h" (effectively midnight, except for days on which daylight savings time changes occur) at the beginning of the service date. For times occurring after midnight on the service date, enter the time as a value greater than 24:00:00 in HH:MM:SS local time for the day on which the trip schedule begins. If you don't have separate times for arrival and departure at a stop, enter the same value for arrival_time and departure_time.
         /// </summary>
         [Attributes.Required]
         [FieldName("departure_time")]
-        public TimeOfDay? DepartureTime { get; set; }
+        [NotMapped]
+        internal TimeOfDay? InternalDepartureTime
+        {
+            get => _internalDepartureTime; set
+            {
+                if (value != null)
+                {
+                    var hours = value.Value.Hours;
+                    if (hours >= 24)
+                    {
+                        hours = 0;
+                    }
+                    _departureTime = new TimeOnly(hours, value.Value.Minutes, value.Value.Seconds);
+                    _internalDepartureTime = value;
+                }
+            }
+        }
+
+        private TimeOnly? _departureTime { get; set; }
+
+        [Column(TypeName = "time without time zone")]
+        public TimeOnly? DepartureTime
+        {
+            get
+            {
+                return _departureTime;
+            }
+            set
+            {
+                _departureTime = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets a stop. Multiple routes may use the same stop. If location_type is used in stops.txt, all stops referenced in stop_times.txt must have location_type of 0.
@@ -145,7 +213,7 @@ namespace GTFS.Entities
             }
             return this.TripId.CompareTo(other.TripId);
         }
-        
+
         /// <summary>
         /// Serves as a hash function.
         /// </summary>
@@ -179,7 +247,7 @@ namespace GTFS.Entities
             {
                 return this.ArrivalTime.Equals(other.ArrivalTime) &&
                     this.DepartureTime.Equals(other.DepartureTime) &&
-                    this.DropOffType== other.DropOffType &&
+                    this.DropOffType == other.DropOffType &&
                     this.PickupType == other.PickupType &&
                     (this.ShapeDistTravelled ?? 0) == (other.ShapeDistTravelled ?? 0) &&
                     (this.StopHeadsign ?? string.Empty) == (other.StopHeadsign ?? string.Empty) &&
@@ -198,8 +266,8 @@ namespace GTFS.Entities
         {
             return new StopTime()
             {
-                ArrivalTime = other.ArrivalTime,
-                DepartureTime = other.DepartureTime,
+                InternalArrivalTime = other.InternalArrivalTime,
+                InternalDepartureTime = other.InternalDepartureTime,
                 DropOffType = other.DropOffType,
                 PickupType = other.PickupType,
                 ShapeDistTravelled = other.ShapeDistTravelled,

@@ -28,16 +28,6 @@ internal class GTFSContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Frequency>().HasNoKey();
-        modelBuilder.Entity<StopTime>()
-            .Property(stopTime => stopTime.ArrivalTime)
-            .HasConversion(
-                v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
-                v => JsonSerializer.Deserialize<TimeOfDay>(v, (JsonSerializerOptions)null)); modelBuilder.Entity<StopTime>()
-            .Property(stopTime => stopTime.DepartureTime)
-            .HasConversion(
-                v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
-                v => JsonSerializer.Deserialize<TimeOfDay>(v, (JsonSerializerOptions)null));
-
     }
 
     protected void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

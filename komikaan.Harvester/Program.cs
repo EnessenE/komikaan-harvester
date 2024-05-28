@@ -1,9 +1,11 @@
 using System.Reflection;
 using komikaan.Harvester.Contexts;
 using komikaan.Harvester.Factories;
+using komikaan.Harvester.Helpers;
 using komikaan.Harvester.Interfaces;
 using komikaan.Harvester.Managers;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Serilog;
 
 namespace komikaan.Harvester
@@ -41,7 +43,10 @@ namespace komikaan.Harvester
             builder.Services.AddHostedService<HarvestingManager>();
             builder.Services.AddSingleton<IDataContext, PostgresContext>();
             builder.Services.AddDbContext<GTFSContext>(options =>
-                options.UseNpgsql(builder.Configuration.GetConnectionString("HarvestingTarget")), optionsLifetime: ServiceLifetime.Singleton, contextLifetime: ServiceLifetime.Singleton);
+            {
+                options.UseNpgsql(builder.Configuration.GetConnectionString("HarvestingTarget"));
+                options.ReplaceService<ISqlGenerationHelper, NpgsqlSqlGenerationLowercasingHelper>();
+            }, optionsLifetime: ServiceLifetime.Singleton, contextLifetime: ServiceLifetime.Singleton);
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
