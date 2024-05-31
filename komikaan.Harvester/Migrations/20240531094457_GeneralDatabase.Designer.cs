@@ -12,7 +12,7 @@ using komikaan.Harvester.Contexts;
 namespace komikaan.Harvester.Migrations
 {
     [DbContext(typeof(GTFSContext))]
-    [Migration("20240528211617_GeneralDatabase")]
+    [Migration("20240531094457_GeneralDatabase")]
     partial class GeneralDatabase
     {
         /// <inheritdoc />
@@ -109,6 +109,8 @@ namespace komikaan.Harvester.Migrations
 
                     b.HasIndex("DataOrigin");
 
+                    b.HasIndex("ServiceId");
+
                     b.ToTable("calenders");
                 });
 
@@ -134,6 +136,8 @@ namespace komikaan.Harvester.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DataOrigin");
+
+                    b.HasIndex("ServiceId");
 
                     b.ToTable("calendar_dates");
                 });
@@ -173,8 +177,8 @@ namespace komikaan.Harvester.Migrations
                     b.Property<string>("AgencyId")
                         .HasColumnType("text");
 
-                    b.Property<int?>("Color")
-                        .HasColumnType("integer");
+                    b.Property<string>("Color")
+                        .HasColumnType("text");
 
                     b.Property<string>("DataOrigin")
                         .IsRequired()
@@ -190,8 +194,8 @@ namespace komikaan.Harvester.Migrations
                     b.Property<string>("ShortName")
                         .HasColumnType("text");
 
-                    b.Property<int?>("TextColor")
-                        .HasColumnType("integer");
+                    b.Property<string>("TextColor")
+                        .HasColumnType("text");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
@@ -201,7 +205,13 @@ namespace komikaan.Harvester.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AgencyId");
+
                     b.HasIndex("DataOrigin");
+
+                    b.HasIndex("LongName");
+
+                    b.HasIndex("ShortName");
 
                     b.ToTable("routes");
                 });
@@ -288,6 +298,12 @@ namespace komikaan.Harvester.Migrations
 
                     b.HasIndex("DataOrigin");
 
+                    b.HasIndex("Name");
+
+                    b.HasIndex("ParentStation");
+
+                    b.HasIndex("Name", "ParentStation");
+
                     b.ToTable("stops");
                 });
 
@@ -334,6 +350,10 @@ namespace komikaan.Harvester.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DataOrigin");
+
+                    b.HasIndex("StopId");
+
+                    b.HasIndex("TripId");
 
                     b.ToTable("stop_times");
                 });
@@ -404,6 +424,12 @@ namespace komikaan.Harvester.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DataOrigin");
+
+                    b.HasIndex("RouteId");
+
+                    b.HasIndex("ServiceId");
+
+                    b.HasIndex("ShapeId");
 
                     b.ToTable("trips");
                 });

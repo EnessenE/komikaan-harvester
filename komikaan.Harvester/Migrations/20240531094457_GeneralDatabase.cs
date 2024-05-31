@@ -93,8 +93,8 @@ namespace komikaan.Harvester.Migrations
                     Description = table.Column<string>(type: "text", nullable: true),
                     Type = table.Column<int>(type: "integer", nullable: false),
                     Url = table.Column<string>(type: "text", nullable: true),
-                    Color = table.Column<int>(type: "integer", nullable: true),
-                    TextColor = table.Column<int>(type: "integer", nullable: true),
+                    Color = table.Column<string>(type: "text", nullable: true),
+                    TextColor = table.Column<string>(type: "text", nullable: true),
                     DataOrigin = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false)
                 },
                 constraints: table =>
@@ -217,9 +217,19 @@ namespace komikaan.Harvester.Migrations
                 column: "DataOrigin");
 
             migrationBuilder.CreateIndex(
+                name: "IX_calendar_dates_ServiceId",
+                table: "calendar_dates",
+                column: "ServiceId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_calenders_DataOrigin",
                 table: "calenders",
                 column: "DataOrigin");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_calenders_ServiceId",
+                table: "calenders",
+                column: "ServiceId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_frequencies_DataOrigin",
@@ -227,9 +237,24 @@ namespace komikaan.Harvester.Migrations
                 column: "DataOrigin");
 
             migrationBuilder.CreateIndex(
+                name: "IX_routes_AgencyId",
+                table: "routes",
+                column: "AgencyId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_routes_DataOrigin",
                 table: "routes",
                 column: "DataOrigin");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_routes_LongName",
+                table: "routes",
+                column: "LongName");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_routes_ShortName",
+                table: "routes",
+                column: "ShortName");
 
             migrationBuilder.CreateIndex(
                 name: "IX_shapes_DataOrigin",
@@ -242,9 +267,34 @@ namespace komikaan.Harvester.Migrations
                 column: "DataOrigin");
 
             migrationBuilder.CreateIndex(
+                name: "IX_stop_times_StopId",
+                table: "stop_times",
+                column: "StopId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_stop_times_TripId",
+                table: "stop_times",
+                column: "TripId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_stops_DataOrigin",
                 table: "stops",
                 column: "DataOrigin");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_stops_Name",
+                table: "stops",
+                column: "Name");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_stops_Name_ParentStation",
+                table: "stops",
+                columns: new[] { "Name", "ParentStation" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_stops_ParentStation",
+                table: "stops",
+                column: "ParentStation");
 
             migrationBuilder.CreateIndex(
                 name: "IX_transfers_DataOrigin",
@@ -255,6 +305,21 @@ namespace komikaan.Harvester.Migrations
                 name: "IX_trips_DataOrigin",
                 table: "trips",
                 column: "DataOrigin");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_trips_RouteId",
+                table: "trips",
+                column: "RouteId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_trips_ServiceId",
+                table: "trips",
+                column: "ServiceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_trips_ShapeId",
+                table: "trips",
+                column: "ShapeId");
         }
 
         /// <inheritdoc />

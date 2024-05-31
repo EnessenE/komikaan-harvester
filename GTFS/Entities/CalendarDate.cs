@@ -22,9 +22,11 @@
 
 using GTFS.Attributes;
 using GTFS.Entities.Enumerations;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Xml.Linq;
 
 namespace GTFS.Entities
 {
@@ -33,6 +35,7 @@ namespace GTFS.Entities
     /// </summary>
     [FileName("calendar_date")]
     [Table("calendar_dates")]
+    [Index(nameof(ServiceId))]
     public class CalendarDate : GTFSEntity, IComparable
     {
         private string poorMansId { get; set; }

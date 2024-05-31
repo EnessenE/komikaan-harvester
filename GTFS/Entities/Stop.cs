@@ -22,8 +22,10 @@
 
 using GTFS.Attributes;
 using GTFS.Entities.Enumerations;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Security.Cryptography.X509Certificates;
 using RequiredAttribute = GTFS.Attributes.RequiredAttribute;
 
 namespace GTFS.Entities
@@ -33,6 +35,10 @@ namespace GTFS.Entities
     /// </summary>
     [FileName("stops")]
     [Table("stops")]
+    [Index(nameof(Name))]
+    [Index(nameof(ParentStation))]
+    [Index(nameof(Name), nameof(ParentStation))]
+
     public class Stop : GTFSEntity
     {
         private string _name;

@@ -22,9 +22,11 @@
 
 using GTFS.Attributes;
 using GTFS.Entities.Enumerations;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Xml.Linq;
 
 namespace GTFS.Entities
 {
@@ -33,6 +35,8 @@ namespace GTFS.Entities
     /// </summary>
     [FileName("stop_times")]
     [Table("stop_times")]
+    [Index(nameof(TripId))]
+    [Index(nameof(StopId))]
     public class StopTime : GTFSEntity, IComparable
     {
         private string _stopId;

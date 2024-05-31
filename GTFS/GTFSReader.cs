@@ -1189,10 +1189,10 @@ namespace GTFS
                     route.Url = this.ParseFieldString(header.Name, fieldName, value);
                     break;
                 case "route_color":
-                    route.Color = this.ParseFieldColor(header.Name, fieldName, value);
+                    route.Color = this.ParseFieldString(header.Name, fieldName, value);
                     break;
                 case "route_text_color":
-                    route.TextColor = this.ParseFieldColor(header.Name, fieldName, value);
+                    route.TextColor = this.ParseFieldString(header.Name, fieldName, value);
                     break;
             }
         }
@@ -1601,25 +1601,6 @@ namespace GTFS
             return value.Trim().Replace("\"\"", "\"");
         }
 
-        /// <summary>
-        /// Parses a color field into an argb value.
-        /// </summary>
-        /// <returns></returns>
-        protected virtual int? ParseFieldColor(string name, string fieldName, string value)
-        {
-            // clean first.
-            value = this.CleanFieldValue(value);
-
-            try
-            {
-                return value.ToArgbInt();
-            }
-            catch (Exception ex)
-            {
-                // hmm, some unknow exception, field not in correct format, give inner exception as a clue.
-                throw new GTFSParseException(name, fieldName, value, ex);
-            }
-        }
 
         /// <summary>
         /// Parses a route-type field.
