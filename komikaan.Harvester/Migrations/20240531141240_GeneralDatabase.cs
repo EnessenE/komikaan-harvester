@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -106,16 +107,18 @@ namespace komikaan.Harvester.Migrations
                 name: "shapes",
                 columns: table => new
                 {
+                    InternalId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    DataOrigin = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Id = table.Column<string>(type: "text", nullable: false),
                     Latitude = table.Column<double>(type: "double precision", nullable: false),
                     Longitude = table.Column<double>(type: "double precision", nullable: false),
                     Sequence = table.Column<long>(type: "bigint", nullable: false),
-                    DistanceTravelled = table.Column<double>(type: "double precision", nullable: true),
-                    DataOrigin = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false)
+                    DistanceTravelled = table.Column<double>(type: "double precision", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_shapes", x => x.Id);
+                    table.PrimaryKey("PK_shapes", x => new { x.DataOrigin, x.Id });
                 });
 
             migrationBuilder.CreateTable(
@@ -260,6 +263,11 @@ namespace komikaan.Harvester.Migrations
                 name: "IX_shapes_DataOrigin",
                 table: "shapes",
                 column: "DataOrigin");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_shapes_Id",
+                table: "shapes",
+                column: "Id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_stop_times_DataOrigin",

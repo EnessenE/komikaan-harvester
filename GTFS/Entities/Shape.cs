@@ -20,9 +20,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Xml.Linq;
 using GTFS.Attributes;
+using Microsoft.EntityFrameworkCore;
 
 namespace GTFS.Entities
 {
@@ -31,16 +34,19 @@ namespace GTFS.Entities
     /// </summary>
     [FileName("shapes")]
     [Table("shapes")]
+    [Index(nameof(Id))]
     public class Shape : GTFSEntity
     {
         private string _id;
+
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int InternalId { get; set; }
 
         /// <summary>
         /// Gets or sets an ID that uniquely identifies a shape.
         /// </summary>
         [Attributes.Required]
         [FieldName("shape_id")]
-        [Key]
         public string Id
         {
             get => _id;

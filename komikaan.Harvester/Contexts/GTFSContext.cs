@@ -28,6 +28,13 @@ internal class GTFSContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Frequency>().HasNoKey();
+        modelBuilder.Entity<Shape>().HasKey(shape =>
+        new
+        {
+            shape.DataOrigin,
+            shape.Id,
+            shape.Sequence
+        });
     }
 
     protected void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

@@ -12,8 +12,8 @@ using komikaan.Harvester.Contexts;
 namespace komikaan.Harvester.Migrations
 {
     [DbContext(typeof(GTFSContext))]
-    [Migration("20240531094457_GeneralDatabase")]
-    partial class GeneralDatabase
+    [Migration("20240531152626_ManyKeys3")]
+    partial class ManyKeys3
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -218,16 +218,24 @@ namespace komikaan.Harvester.Migrations
 
             modelBuilder.Entity("GTFS.Entities.Shape", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
-
                     b.Property<string>("DataOrigin")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<long>("Sequence")
+                        .HasColumnType("bigint");
+
                     b.Property<double?>("DistanceTravelled")
                         .HasColumnType("double precision");
+
+                    b.Property<int>("InternalId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("InternalId"));
 
                     b.Property<double>("Latitude")
                         .HasColumnType("double precision");
@@ -235,12 +243,11 @@ namespace komikaan.Harvester.Migrations
                     b.Property<double>("Longitude")
                         .HasColumnType("double precision");
 
-                    b.Property<long>("Sequence")
-                        .HasColumnType("bigint");
-
-                    b.HasKey("Id");
+                    b.HasKey("DataOrigin", "Id", "Sequence");
 
                     b.HasIndex("DataOrigin");
+
+                    b.HasIndex("Id");
 
                     b.ToTable("shapes");
                 });
