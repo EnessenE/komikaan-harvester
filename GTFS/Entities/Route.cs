@@ -22,8 +22,10 @@
 
 using GTFS.Attributes;
 using GTFS.Entities.Enumerations;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Xml.Linq;
 using RequiredAttribute = GTFS.Attributes.RequiredAttribute;
 
 namespace GTFS.Entities
@@ -33,6 +35,10 @@ namespace GTFS.Entities
     /// </summary>
     [FileName("route")]
     [Table("routes")]
+
+    [Index(nameof(AgencyId))]
+    [Index(nameof(ShortName))]
+    [Index(nameof(LongName))]
     public class Route : GTFSEntity
     {
         private string _id;
@@ -109,13 +115,13 @@ namespace GTFS.Entities
         /// Gets or sets a color that corresponds to a route. The color must be provided as a six-character hexadecimal number, for example, 00FFFF. If no color is specified, the default route color is white (FFFFFF).
         /// </summary>
         [FieldName("route_color")]
-        public int? Color { get; set; }
+        public string? Color { get; set; }
 
         /// <summary>
         /// Gets or sets a legible color to use for text drawn against a background of route_color. The color must be provided as a six-character hexadecimal number, for example, FFD700. If no color is specified, the default text color is black (000000).
         /// </summary>
         [FieldName("route_text_color")]
-        public int? TextColor { get; set; }
+        public string? TextColor { get; set; }
 
         /// <summary>
         /// Serves as a hash function.
@@ -132,7 +138,7 @@ namespace GTFS.Entities
                 hash = hash * 43 + (this.Id ?? string.Empty).GetHashCode();
                 hash = hash * 43 + (this.LongName ?? string.Empty).GetHashCode();
                 hash = hash * 43 + (this.ShortName ?? string.Empty).GetHashCode();
-                hash = hash * 43 + (this.TextColor ?? -1).GetHashCode();
+                hash = hash * 43 + (this.TextColor ?? string.Empty).GetHashCode();
                 hash = hash * 43 + this.Type.GetHashCode();
                 hash = hash * 43 + (this.Url ?? string.Empty).GetHashCode();
                 return hash;
@@ -153,7 +159,7 @@ namespace GTFS.Entities
                     (this.Id ?? string.Empty) == (other.Id ?? string.Empty) &&
                     (this.LongName ?? string.Empty) == (other.LongName ?? string.Empty) &&
                     (this.ShortName ?? string.Empty) == (other.ShortName ?? string.Empty) &&
-                    (this.TextColor ?? -1) == (other.TextColor ?? -1) &&
+                    (this.TextColor ?? string.Empty) == (other.TextColor ?? string.Empty) &&
                     this.Type == other.Type &&
                     (this.Url ?? string.Empty) == (other.Url ?? string.Empty);
             }
