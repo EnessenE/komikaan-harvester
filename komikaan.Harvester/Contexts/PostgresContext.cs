@@ -66,7 +66,7 @@ internal class PostgresContext : IDataContext
             operation.MergeKeepIdentity = true;
 
         });
-        _gtfsContext.Shapes.BulkInsert(feed.Shapes, operation =>
+        _gtfsContext.Shapes.BulkInsert(feed.Shapes.ToList(), operation =>
         {
             operation.InsertIfNotExists = true;
             operation.MergeKeepIdentity = true;

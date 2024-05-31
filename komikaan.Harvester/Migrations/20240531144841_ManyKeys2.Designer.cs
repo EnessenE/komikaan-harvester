@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using komikaan.Harvester.Contexts;
@@ -11,9 +12,11 @@ using komikaan.Harvester.Contexts;
 namespace komikaan.Harvester.Migrations
 {
     [DbContext(typeof(GTFSContext))]
-    partial class GTFSContextModelSnapshot : ModelSnapshot
+    [Migration("20240531144841_ManyKeys2")]
+    partial class ManyKeys2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -222,9 +225,6 @@ namespace komikaan.Harvester.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
-                    b.Property<long>("Sequence")
-                        .HasColumnType("bigint");
-
                     b.Property<double?>("DistanceTravelled")
                         .HasColumnType("double precision");
 
@@ -240,7 +240,10 @@ namespace komikaan.Harvester.Migrations
                     b.Property<double>("Longitude")
                         .HasColumnType("double precision");
 
-                    b.HasKey("DataOrigin", "Id", "Sequence");
+                    b.Property<long>("Sequence")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("DataOrigin", "Id");
 
                     b.HasIndex("DataOrigin");
 
