@@ -45,8 +45,9 @@ namespace komikaan.Harvester
             builder.Services.AddDbContext<GTFSContext>(options =>
             {
                 options.UseNpgsql(builder.Configuration.GetConnectionString("HarvestingTarget"));
+                options.UseSnakeCaseNamingConvention();
                 options.ReplaceService<ISqlGenerationHelper, NpgsqlSqlGenerationLowercasingHelper>();
-            }, optionsLifetime: ServiceLifetime.Singleton, contextLifetime: ServiceLifetime.Singleton);
+            }, optionsLifetime: ServiceLifetime.Singleton, contextLifetime: ServiceLifetime.Singleton); 
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
