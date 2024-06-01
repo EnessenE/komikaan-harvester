@@ -31,7 +31,9 @@ internal class GTFSContext : DbContext
         new
         {
             item.DataOrigin,
-            item.Id
+            item.TripId,
+            item.StartTime,
+            item.EndTime
         });
         modelBuilder.Entity<Shape>().HasKey(shape =>
         new
