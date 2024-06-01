@@ -38,10 +38,6 @@ namespace GTFS.Entities
         private string _endTime;
         private string _headwaySecs;
 
-
-        
-        public string Id { get => $"{TripId}_{StartTime}_{EndTime}"; }
-
         /// <summary>
         /// Gets or sets a trip.
         /// </summary>
