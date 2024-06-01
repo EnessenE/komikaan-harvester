@@ -22,6 +22,7 @@
 
 using GTFS.Attributes;
 using GTFS.Entities.Enumerations;
+using GTFS.InternalExtensions;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -48,7 +49,7 @@ namespace GTFS.Entities
         /// </summary>
         [Required]
         [FieldName("trip_id")]
-        
+
         public string Id { get; set; }
 
         /// <summary>
@@ -59,7 +60,7 @@ namespace GTFS.Entities
         public string RouteId
         {
             get => _routeId;
-            set => _routeId = string.Intern(value);
+            set => _routeId = value?.Intern();
         }
 
         /// <summary>
@@ -76,7 +77,7 @@ namespace GTFS.Entities
         public string Headsign
         {
             get => _headsign;
-            set => _headsign = string.Intern(value);
+            set => _headsign = value?.Intern();
         }
 
         /// <summary>
@@ -86,7 +87,7 @@ namespace GTFS.Entities
         public string ShortName
         {
             get => _shortName;
-            set => _shortName = string.Intern(value);
+            set => _shortName = value?.Intern();
         }
 
         /// <summary>
@@ -95,22 +96,33 @@ namespace GTFS.Entities
         [FieldName("direction_id")]
         public DirectionType? Direction { get; set; }
 
+
+        private string? _blockId;
         /// <summary>
         /// Gets or sets the block to which the trip belongs. A block consists of two or more sequential trips made using the same vehicle, where a passenger can transfer from one trip to the next just by staying in the vehicle. The block_id must be referenced by two or more trips in trips.txt.
         /// </summary>
         [FieldName("block_id")]
-        public string BlockId { get; set; }
+        public string? BlockId { 
+            get => _blockId;
+            set => _blockId = value.Intern();
+           }
+
+        private string _shapeId;
 
         /// <summary>
         /// Gets or sets a shape for the trip. This value is referenced from the shapes.txt file. The shapes.txt file allows you to define how a line should be drawn on the map to represent a trip.
         /// </summary>
         [FieldName("shape_id")]
-        public string ShapeId { get; set; }
+        public string? ShapeId
+        {
+            get => _shapeId;
+            set => _shapeId = value.Intern();
+        }
 
-        /// <summary>
-        /// Gets or sets accessibility information for the trip
-        /// </summary>
-        [FieldName("wheelchair_accessible")]
+            /// <summary>
+            /// Gets or sets accessibility information for the trip
+            /// </summary>
+            [FieldName("wheelchair_accessible")]
         public WheelchairAccessibilityType? AccessibilityType { get; set; }
 
         /// <summary>

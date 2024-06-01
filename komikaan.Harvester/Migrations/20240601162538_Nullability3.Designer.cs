@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using komikaan.Harvester.Contexts;
@@ -11,9 +12,11 @@ using komikaan.Harvester.Contexts;
 namespace komikaan.Harvester.Migrations
 {
     [DbContext(typeof(GTFSContext))]
-    partial class GTFSContextModelSnapshot : ModelSnapshot
+    [Migration("20240601162538_Nullability3")]
+    partial class Nullability3
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -400,6 +403,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnName("id");
 
                     b.Property<string>("Code")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("code");
 
@@ -449,6 +453,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnName("wheelchair_boarding");
 
                     b.Property<string>("Zone")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("zone");
 
@@ -590,6 +595,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnName("accessibility_type");
 
                     b.Property<string>("BlockId")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("block_id");
 
@@ -613,6 +619,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnName("service_id");
 
                     b.Property<string>("ShapeId")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("shape_id");
 

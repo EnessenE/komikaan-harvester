@@ -1596,9 +1596,15 @@ namespace GTFS
         /// <param name="fieldName"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        protected virtual string ParseFieldString(string name, string fieldName, string value)
+        protected virtual string? ParseFieldString(string name, string fieldName, string value)
         {
-            return value.Trim().Replace("\"\"", "\"");
+            var data = value.Trim().Replace("\"", "");
+            if (string.IsNullOrWhiteSpace(data))
+            { 
+                data = null; 
+            }
+
+            return data;
         }
 
 

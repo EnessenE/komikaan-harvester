@@ -21,6 +21,7 @@
 // THE SOFTWARE.
 
 using GTFS.Attributes;
+using GTFS.InternalExtensions;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.ComponentModel.DataAnnotations;
@@ -47,7 +48,7 @@ namespace GTFS.Entities
         public string ServiceId
         {
             get { return _serviceId; }
-            set { _serviceId = string.Intern(value); OnEntityChanged(); }
+            set { _serviceId = value?.Intern(); OnEntityChanged(); }
         }
 
         /// <summary>

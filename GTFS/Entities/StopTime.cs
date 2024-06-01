@@ -22,6 +22,7 @@
 
 using GTFS.Attributes;
 using GTFS.Entities.Enumerations;
+using GTFS.InternalExtensions;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.ComponentModel.DataAnnotations;
@@ -39,9 +40,9 @@ namespace GTFS.Entities
     [Index(nameof(StopId))]
     public class StopTime : GTFSEntity, IComparable
     {
-        private string _stopId;
-        private string _tripId;
-        private string _stopHeadsign;
+        private string? _stopId;
+        private string? _tripId;
+        private string? _stopHeadsign;
 
         /// <summary>
         /// Gets or sets a trip.
@@ -51,7 +52,7 @@ namespace GTFS.Entities
         public string TripId
         {
             get => _tripId;
-            set => _tripId = string.Intern(value);
+            set => _tripId = value?.Intern();
         }
 
         private TimeOfDay? _internalArrivalTime { get; set; }
@@ -131,6 +132,7 @@ namespace GTFS.Entities
             set
             {
                 _departureTime = value;
+                "a".Intern();
             }
         }
 
@@ -139,10 +141,10 @@ namespace GTFS.Entities
         /// </summary>
         [Attributes.Required]
         [FieldName("stop_id")]
-        public string StopId
+        public string? StopId
         {
             get => _stopId;
-            set => _stopId = string.Intern(value);
+            set => _stopId = value?.Intern();
         }
 
         /// <summary>
@@ -156,10 +158,10 @@ namespace GTFS.Entities
         /// Gets or sets the text that appears on a sign that identifies the trip's destination to passengers. Use this field to override the default trip_headsign when the headsign changes between stops. If this headsign is associated with an entire trip, use trip_headsign instead.
         /// </summary>
         [FieldName("stop_headsign")]
-        public string StopHeadsign
+        public string? StopHeadsign
         {
             get => _stopHeadsign;
-            set => _stopHeadsign = string.Intern(value);
+            set => _stopHeadsign = value?.Intern();
         }
 
         /// <summary>

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using komikaan.Harvester.Contexts;
@@ -11,9 +12,11 @@ using komikaan.Harvester.Contexts;
 namespace komikaan.Harvester.Migrations
 {
     [DbContext(typeof(GTFSContext))]
-    partial class GTFSContextModelSnapshot : ModelSnapshot
+    [Migration("20240601104621_Nullability")]
+    partial class Nullability
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -34,14 +37,17 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnName("id");
 
                     b.Property<string>("Email")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("email");
 
                     b.Property<string>("FareURL")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("fare_url");
 
                     b.Property<string>("LanguageCode")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("language_code");
 
@@ -51,14 +57,17 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnName("name");
 
                     b.Property<string>("Phone")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("phone");
 
                     b.Property<string>("Timezone")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("timezone");
 
                     b.Property<string>("URL")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("url");
 
@@ -299,6 +308,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnName("color");
 
                     b.Property<string>("Description")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("description");
 
@@ -321,6 +331,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnName("type");
 
                     b.Property<string>("Url")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("url");
 
@@ -400,10 +411,12 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnName("id");
 
                     b.Property<string>("Code")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("code");
 
                     b.Property<string>("Description")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("description");
 
@@ -412,6 +425,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnName("latitude");
 
                     b.Property<string>("LevelId")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("level_id");
 
@@ -433,22 +447,27 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnName("parent_station");
 
                     b.Property<string>("PlatformCode")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("platform_code");
 
                     b.Property<string>("Timezone")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("timezone");
 
                     b.Property<string>("Url")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("url");
 
                     b.Property<string>("WheelchairBoarding")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("wheelchair_boarding");
 
                     b.Property<string>("Zone")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("zone");
 
@@ -513,6 +532,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnName("shape_dist_travelled");
 
                     b.Property<string>("StopHeadsign")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("stop_headsign");
 
@@ -590,6 +610,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnName("accessibility_type");
 
                     b.Property<string>("BlockId")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("block_id");
 
@@ -613,6 +634,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnName("service_id");
 
                     b.Property<string>("ShapeId")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("shape_id");
 
