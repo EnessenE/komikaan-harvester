@@ -51,7 +51,7 @@ namespace GTFS.Entities
         /// </summary>
         [Required]
         [FieldName("route_id")]
-        [Key]
+        
         public string Id
         {
             get => _id;

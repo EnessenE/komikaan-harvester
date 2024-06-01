@@ -48,7 +48,7 @@ namespace GTFS.Entities
         /// </summary>
         [Required]
         [FieldName("trip_id")]
-        [Key]
+        
         public string Id { get; set; }
 
         /// <summary>

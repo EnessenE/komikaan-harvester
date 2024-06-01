@@ -39,7 +39,7 @@ namespace GTFS.Entities
         private string _headwaySecs;
 
 
-        [Key]
+        
         public string Id { get => $"{TripId}_{StartTime}_{EndTime}"; }
 
         /// <summary>

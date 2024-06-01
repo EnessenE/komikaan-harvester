@@ -41,7 +41,7 @@ namespace GTFS.Entities
         private string poorMansId { get; set; }
         private string _serviceId { get; set; }
 
-        [Key]
+        
         public string Id { get => $"{ServiceId}_{Date}";
             set => poorMansId = value;
         }

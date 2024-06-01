@@ -43,7 +43,7 @@ namespace GTFS.Entities
         /// </summary>
         [Attributes.Required]
         [FieldName("service_id")]
-        [Key]
+        
         public string ServiceId
         {
             get { return _serviceId; }

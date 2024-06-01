@@ -42,7 +42,7 @@ namespace GTFS.Entities
         /// Gets or sets the ID that uniquely identifies a transit agency.
         /// </summary>
         [FieldName("agency_id")]
-        [Key]
+        
         public string Id
         {
             get => _id;

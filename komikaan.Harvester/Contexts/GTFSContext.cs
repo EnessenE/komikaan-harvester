@@ -27,13 +27,86 @@ internal class GTFSContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Frequency>().HasNoKey();
+        modelBuilder.Entity<Frequency>().HasKey(item =>
+        new
+        {
+            item.DataOrigin,
+            item.Id
+        });
         modelBuilder.Entity<Shape>().HasKey(shape =>
         new
         {
             shape.DataOrigin,
             shape.Id,
             shape.Sequence
+        });
+        modelBuilder.Entity<Stop>().HasKey(item =>
+        new
+        {
+            item.DataOrigin,
+            item.Id
+        });
+        modelBuilder.Entity<Agency>().HasKey(item =>
+        new
+        {
+            item.DataOrigin,
+            item.Id
+        });
+
+        modelBuilder.Entity<Calendar>().HasKey(item =>
+        new
+        {
+            item.DataOrigin,
+            item.ServiceId
+        });
+
+        modelBuilder.Entity<Stop>().HasKey(item =>
+        new
+        {
+            item.DataOrigin,
+            item.Id
+        });
+
+        modelBuilder.Entity<Pathway>().HasKey(item =>
+        new
+        {
+            item.DataOrigin,
+            item.Id
+        });
+
+        modelBuilder.Entity<Route>().HasKey(item =>
+        new
+        {
+            item.DataOrigin,
+            item.Id
+        });
+
+        modelBuilder.Entity<StopTime>().HasKey(item =>
+        new
+        {
+            item.DataOrigin,
+            item.Id
+        });
+
+        modelBuilder.Entity<Transfer>().HasKey(item =>
+        new
+        {
+            item.DataOrigin,
+            item.Id
+        });
+
+        modelBuilder.Entity<CalendarDate>().HasKey(item =>
+        new
+        {
+            item.DataOrigin,
+            item.Id
+        });
+
+        modelBuilder.Entity<Trip>().HasKey(item =>
+        new
+        {
+            item.DataOrigin,
+            item.Id
         });
     }
 
