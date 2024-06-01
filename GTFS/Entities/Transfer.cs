@@ -38,7 +38,7 @@ namespace GTFS.Entities
         private string _toStopId;
         private string poorMansId { get; set; }
 
-        [Key]
+        
         public string Id { get => $"{FromStopId}_{ToStopId}";
             set => poorMansId = value;
         }

@@ -25,7 +25,6 @@ using GTFS.Entities.Enumerations;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Security.Cryptography.X509Certificates;
 using RequiredAttribute = GTFS.Attributes.RequiredAttribute;
 
 namespace GTFS.Entities
@@ -48,7 +47,7 @@ namespace GTFS.Entities
         /// </summary>
         [Required]
         [FieldName("stop_id")]
-        [Key]
+        
         public string Id { get; set; }
 
         /// <summary>

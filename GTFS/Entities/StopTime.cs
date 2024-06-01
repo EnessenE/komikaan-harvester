@@ -44,7 +44,7 @@ namespace GTFS.Entities
         private string _stopHeadsign;
         private string poorMansId { get; set; }
 
-        [Key]
+        
         public string Id
         {
             get => $"{TripId}_{InternalArrivalTime}_{StopId}";
