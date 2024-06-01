@@ -87,7 +87,9 @@ internal class GTFSContext : DbContext
         new
         {
             item.DataOrigin,
-            item.Id
+            item.TripId,
+            item.StopId,
+            item.StopSequence
         });
 
         modelBuilder.Entity<Transfer>().HasKey(item =>
