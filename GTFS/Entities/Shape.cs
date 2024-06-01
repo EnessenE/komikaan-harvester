@@ -25,6 +25,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Xml.Linq;
 using GTFS.Attributes;
+using GTFS.InternalExtensions;
 using Microsoft.EntityFrameworkCore;
 
 namespace GTFS.Entities
@@ -50,7 +51,7 @@ namespace GTFS.Entities
         public string Id
         {
             get => _id;
-            set => _id = string.Intern(value);
+            set => _id = value?.Intern();
         }
 
         /// <summary>

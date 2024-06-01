@@ -23,6 +23,7 @@
 using System.ComponentModel.DataAnnotations;
 using GTFS.Attributes;
 using System.ComponentModel.DataAnnotations.Schema;
+using GTFS.InternalExtensions;
 
 namespace GTFS.Entities
 {
@@ -46,7 +47,7 @@ namespace GTFS.Entities
         public string TripId
         {
             get => _tripId;
-            set => _tripId = string.Intern(value);
+            set => _tripId = value?.Intern();
         }
 
         /// <summary>
@@ -57,7 +58,7 @@ namespace GTFS.Entities
         public string StartTime
         {
             get => _startTime;
-            set => _startTime = string.Intern(value);
+            set => _startTime = value?.Intern();
         }
 
         /// <summary>
@@ -68,7 +69,7 @@ namespace GTFS.Entities
         public string EndTime
         {
             get => _endTime;
-            set => _endTime = string.Intern(value);
+            set => _endTime = value?.Intern();
         }
 
         /// <summary>
@@ -79,7 +80,7 @@ namespace GTFS.Entities
         public string HeadwaySecs
         {
             get => _headwaySecs;
-            set => _headwaySecs = string.Intern(value);
+            set => _headwaySecs = value?.Intern();
         }
 
         /// <summary>
