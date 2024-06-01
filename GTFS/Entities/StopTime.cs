@@ -42,14 +42,6 @@ namespace GTFS.Entities
         private string _stopId;
         private string _tripId;
         private string _stopHeadsign;
-        private string poorMansId { get; set; }
-
-        
-        public string Id
-        {
-            get => $"{TripId}_{InternalArrivalTime}_{StopId}";
-            set => poorMansId = value;
-        }
 
         /// <summary>
         /// Gets or sets a trip.

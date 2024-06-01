@@ -15,21 +15,21 @@ namespace komikaan.Harvester.Factories
         {
             _services = services;
             _supplierConfigurations = new List<SupplierConfiguration>();
-            //_supplierConfigurations.Add(new SupplierConfiguration()
-            //{
-            //    DataType = SupplierType.GTFS,
-            //    RetrievalType = RetrievalType.REST,
-            //    Name = "OpenOV",
-            //    Url = "C:\\Users\\maile\\Downloads\\gtfs-nl.zip"
-            //});
+            _supplierConfigurations.Add(new SupplierConfiguration()
+            {
+                DataType = SupplierType.GTFS,
+                RetrievalType = RetrievalType.REST,
+                Name = "OpenOV",
+                Url = "C:\\Users\\maile\\Downloads\\gtfs-nl.zip"
+            });
 
-            //_supplierConfigurations.Add(new SupplierConfiguration()
-            //{
-            //    DataType = SupplierType.GTFS,
-            //    RetrievalType = RetrievalType.REST,
-            //    Name = "NMBS",
-            //    Url = "C:\\Users\\maile\\Downloads\\NMBS.zip"
-            //});
+            _supplierConfigurations.Add(new SupplierConfiguration()
+            {
+                DataType = SupplierType.GTFS,
+                RetrievalType = RetrievalType.REST,
+                Name = "NMBS",
+                Url = "C:\\Users\\maile\\Downloads\\NMBS.zip"
+            });
             _supplierConfigurations.Add(new SupplierConfiguration()
             {
                 DataType = SupplierType.GTFS,
