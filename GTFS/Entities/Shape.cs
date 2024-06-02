@@ -27,6 +27,7 @@ using System.Xml.Linq;
 using GTFS.Attributes;
 using GTFS.InternalExtensions;
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 
 namespace GTFS.Entities
 {
@@ -67,6 +68,9 @@ namespace GTFS.Entities
         [Attributes.Required]
         [FieldName("shape_pt_lon")]
         public double Longitude { get; set; }
+
+
+        public Point GeoLocation { get; set; }
 
         /// <summary>
         /// Gets or sets the sequence order along the shape. The values for shape_pt_sequence must be non-negative integers, and they must increase along the trip. 

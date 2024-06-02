@@ -41,10 +41,11 @@ namespace komikaan.Harvester
             AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
             builder.Services.AddHostedService<HarvestingManager>();
+            builder.Services.AddSingleton<GardenerContext>();
             builder.Services.AddSingleton<IDataContext, PostgresContext>();
             builder.Services.AddDbContext<GTFSContext>(options =>
             {
-                options.UseNpgsql(builder.Configuration.GetConnectionString("HarvestingTarget"));
+                options.UseNpgsql(builder.Configuration.GetConnectionString("HarvestingTarget"), o => o.UseNetTopologySuite());
                 options.UseSnakeCaseNamingConvention();
                 options.ReplaceService<ISqlGenerationHelper, NpgsqlSqlGenerationLowercasingHelper>();
             }, optionsLifetime: ServiceLifetime.Singleton, contextLifetime: ServiceLifetime.Singleton); 

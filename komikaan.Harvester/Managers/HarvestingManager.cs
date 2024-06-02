@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using komikaan.Harvester.Contexts;
 using komikaan.Harvester.Interfaces;
 
 namespace komikaan.Harvester.Managers
@@ -12,12 +13,14 @@ namespace komikaan.Harvester.Managers
         private readonly IEnumerable<ISupplier> _suppliers;
         private readonly IDataContext _dataContext;
         private readonly ILogger<HarvestingManager> _logger;
+        private readonly GardenerContext _gardenerContext;
 
-        public HarvestingManager(IEnumerable<ISupplier> suppliers, ILogger<HarvestingManager> logger, IDataContext dataContext)
+        public HarvestingManager(IEnumerable<ISupplier> suppliers, ILogger<HarvestingManager> logger, IDataContext dataContext, GardenerContext gardenerContext)
         {
             _suppliers = suppliers;
             _logger = logger;
             _dataContext = dataContext;
+            _gardenerContext = gardenerContext;
         }
         public async Task Harvesting()
         {
@@ -32,6 +35,10 @@ namespace komikaan.Harvester.Managers
 
                 await _dataContext.ImportAsync(feed);
                 _logger.LogInformation("Finished importing data in {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
+                _logger.LogInformation("Notifying the gardeners for {name}", config.Name);
+                _gardenerContext.SendMessage(new GardernerNotification());
+                _logger.LogInformation("Notified the gardeners", config.Name);
+                
             }
         }
 

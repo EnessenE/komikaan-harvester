@@ -24,6 +24,7 @@ using GTFS.Attributes;
 using GTFS.Entities.Enumerations;
 using GTFS.InternalExtensions;
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 using System.ComponentModel.DataAnnotations.Schema;
 using RequiredAttribute = GTFS.Attributes.RequiredAttribute;
 
@@ -94,6 +95,8 @@ namespace GTFS.Entities
         [Required]
         [FieldName("stop_lon")]
         public double Longitude { get; set; }
+
+        public Point GeoLocation { get; set; }
 
         private string? _zone;
         /// <summary>
