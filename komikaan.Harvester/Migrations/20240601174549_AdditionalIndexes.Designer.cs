@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using komikaan.Harvester.Contexts;
@@ -11,9 +12,11 @@ using komikaan.Harvester.Contexts;
 namespace komikaan.Harvester.Migrations
 {
     [DbContext(typeof(GTFSContext))]
-    partial class GTFSContextModelSnapshot : ModelSnapshot
+    [Migration("20240601174549_AdditionalIndexes")]
+    partial class AdditionalIndexes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -144,19 +147,19 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("data_origin");
 
-                    b.Property<DateTimeOffset>("Date")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("date");
-
                     b.Property<string>("ServiceId")
                         .HasColumnType("text")
                         .HasColumnName("service_id");
+
+                    b.Property<DateTimeOffset>("Date")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("date");
 
                     b.Property<int>("ExceptionType")
                         .HasColumnType("integer")
                         .HasColumnName("exception_type");
 
-                    b.HasKey("DataOrigin", "Date", "ServiceId")
+                    b.HasKey("DataOrigin", "ServiceId")
                         .HasName("pk_calendar_dates");
 
                     b.HasIndex("DataOrigin")

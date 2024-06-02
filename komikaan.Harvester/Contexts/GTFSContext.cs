@@ -103,7 +103,8 @@ internal class GTFSContext : DbContext
         new
         {
             item.DataOrigin,
-            item.Id
+            item.Date,
+            item.ServiceId
         });
 
         modelBuilder.Entity<Trip>().HasKey(item =>
