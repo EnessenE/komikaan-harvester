@@ -27,6 +27,7 @@ internal class GTFSContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.HasPostgresExtension("postgis");
         modelBuilder.Entity<Frequency>().HasKey(item =>
         new
         {

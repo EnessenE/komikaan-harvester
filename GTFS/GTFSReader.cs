@@ -26,6 +26,7 @@ using GTFS.Entities.Enumerations;
 using GTFS.Exceptions;
 using GTFS.Fields;
 using GTFS.IO;
+using NetTopologySuite.Geometries;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -1223,6 +1224,7 @@ namespace GTFS
             {
                 this.ParseShapeField(feed, header, shape, header.GetColumn(idx), data[idx]);
             }
+            shape.GeoLocation = new Point(shape.Latitude, shape.Longitude);
 
             return shape;
         }
@@ -1285,6 +1287,7 @@ namespace GTFS
                 this.ParseStopField(feed, header, stop, header.GetColumn(idx), data[idx]);
             }
 
+            stop.GeoLocation = new Point(stop.Latitude, stop.Longitude);
             return stop;
         }
 
