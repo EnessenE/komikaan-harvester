@@ -24,7 +24,6 @@ using GTFS.Attributes;
 using GTFS.Entities.Enumerations;
 using GTFS.InternalExtensions;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using RequiredAttribute = GTFS.Attributes.RequiredAttribute;
 
@@ -39,6 +38,7 @@ namespace GTFS.Entities
     [Index(nameof(Name))]
     [Index(nameof(ParentStation))]
     [Index(nameof(Name), nameof(ParentStation))]
+    [Index(nameof(Id), nameof(ParentStation))]
 
     public class Stop : GTFSEntity
     {

@@ -39,13 +39,7 @@ namespace GTFS.Entities
     [Index(nameof(ServiceId))]
     public class CalendarDate : GTFSEntity, IComparable
     {
-        private string poorMansId { get; set; }
         private string _serviceId { get; set; }
-
-        
-        public string Id { get => $"{ServiceId}_{Date}";
-            set => poorMansId = value;
-        }
 
         /// <summary>
         /// Gets or sets an ID that uniquely identifies a set of dates when a service exception is available for one or more routes. Each (service_id, date) pair can only appear once in calendar_dates.txt. If the a service_id value appears in both the calendar.txt and calendar_dates.txt files, the information in calendar_dates.txt modifies the service information specified in calendar.txt. This field is referenced by the trips.txt file.
