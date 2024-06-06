@@ -47,6 +47,7 @@ internal class GTFSContext : DbContext
         new
         {
             item.DataOrigin,
+            item.InternalId,
             item.Id
         });
         modelBuilder.Entity<Agency>().HasKey(item =>
@@ -114,6 +115,7 @@ internal class GTFSContext : DbContext
             item.DataOrigin,
             item.Id
         });
+
     }
 
     protected void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

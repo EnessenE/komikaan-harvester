@@ -26,6 +26,7 @@ using GTFS.InternalExtensions;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 using RequiredAttribute = GTFS.Attributes.RequiredAttribute;
 
 namespace GTFS.Entities
@@ -36,6 +37,7 @@ namespace GTFS.Entities
     [FileName("stops")]
     [Table("stops")]
     [Index(nameof(Id))]
+    [Index(nameof(InternalId))]
     [Index(nameof(Name))]
     [Index(nameof(ParentStation))]
     [Index(nameof(Name), nameof(ParentStation))]
@@ -45,13 +47,16 @@ namespace GTFS.Entities
     {
         private string _name;
         private string _code;
+        private string _internalId;
 
         /// <summary>
         /// Gets or sets an ID that uniquely identifies a stop or station. Multiple routes may use the same stop. The stop_id is dataset unique.
         /// </summary>
         [Required]
+        public string InternalId { get => DataOrigin + "_" + Id; set => _internalId = value; }
+
+        [Required]
         [FieldName("stop_id")]
-        
         public string Id { get; set; }
 
         /// <summary>
@@ -96,6 +101,7 @@ namespace GTFS.Entities
         [FieldName("stop_lon")]
         public double Longitude { get; set; }
 
+        [JsonIgnore]
         public Point GeoLocation { get; set; }
 
         private string? _zone;
