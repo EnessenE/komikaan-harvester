@@ -2,6 +2,7 @@
 using System.Text;
 using RabbitMQ.Client;
 using System.Text.Json;
+using System.Threading.Channels;
 
 namespace komikaan.Harvester.Contexts
 {
@@ -13,30 +14,34 @@ namespace komikaan.Harvester.Contexts
         {
 
             var factory = new ConnectionFactory { HostName = "localhost" };
-            using var connection = factory.CreateConnection();
-            using var channel = connection.CreateModel();
+            var connection = factory.CreateConnection();
+            _channel = connection.CreateModel();
 
-            _channel.QueueDeclare(queue: "hello",
-                                 durable: false,
+
+            _channel.ExchangeDeclare("stop-notifications", "direct", true);
+            _channel.QueueDeclare(queue: "gardeners",
+                                 durable: true,
                                  exclusive: false,
                                  autoDelete: false,
                                  arguments: null);
+            _channel.QueueBind("gardeners", "stop-notifications", "gardener");
 
             return Task.CompletedTask;
         }
 
         public void SendMessage(object message)
         {
-            var rawMessage = JsonSerializer.Serialize(message);
+            var options = new JsonSerializerOptions
+            {
+                NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals
+            };
+
+            var rawMessage = JsonSerializer.Serialize(message, options);
             var body = Encoding.UTF8.GetBytes(rawMessage);
             _channel.BasicPublish(exchange: string.Empty,
-                                 routingKey: "hello",
+                                 routingKey: "gardeners",
                                  basicProperties: null,
                                  body: body);
-            Console.WriteLine($" [x] Sent {rawMessage}");
-
-            Console.WriteLine(" Press [enter] to exit.");
-            Console.ReadLine();
         }
     }
 }
