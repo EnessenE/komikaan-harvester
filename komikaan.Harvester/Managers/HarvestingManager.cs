@@ -40,7 +40,7 @@ namespace komikaan.Harvester.Managers
                 var feed = await supplier.GetFeedAsync();
                 _logger.LogInformation("Finished retrieving data in {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
 
-                //await _dataContext.ImportAsync(feed);
+                await _dataContext.ImportAsync(feed);
                 _logger.LogInformation("Finished importing data in {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
                 _logger.LogInformation("Notifying the gardeners for {name}", config.Name);
                 await Notify(feed);
