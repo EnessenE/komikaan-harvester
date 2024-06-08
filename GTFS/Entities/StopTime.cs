@@ -144,7 +144,7 @@ namespace GTFS.Entities
         /// </summary>
         [Attributes.Required]
         [FieldName("stop_id")]
-        public string? StopId
+        public string StopId
         {
             get => _stopId;
             set => _stopId = value?.Intern();
