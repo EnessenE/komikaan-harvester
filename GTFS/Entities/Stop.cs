@@ -157,6 +157,8 @@ namespace GTFS.Entities
         [FieldName("platform_code")]
         public string? PlatformCode { get; set; }
 
+        public StopType StopType { get; set; }
+
         /// <summary>
         /// Returns a description of this stop.
         /// </summary>
