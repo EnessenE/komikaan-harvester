@@ -1,4 +1,6 @@
+using System.Configuration;
 using System.Reflection;
+using JNogueira.Discord.Webhook.Client;
 using komikaan.Harvester.Contexts;
 using komikaan.Harvester.Factories;
 using komikaan.Harvester.Helpers;
@@ -19,7 +21,7 @@ namespace komikaan.Harvester
             builder.Configuration.AddEnvironmentVariables();
 
             Log.Logger = new LoggerConfiguration()
-                .WriteTo.Console()
+                 .ReadFrom.Configuration(builder.Configuration)
                 .CreateLogger();
 
             builder.Host.UseSerilog();
@@ -36,11 +38,14 @@ namespace komikaan.Harvester
             builder.Services.AddSwaggerGen();
 
 
-            AddSuppliers(builder.Services);
 
             AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
             builder.Services.AddHostedService<HarvestingManager>();
+            var client = new DiscordWebhookClient("https://discord.com/api/webhooks/1249326974883725343/hMojhofrsjrsY9Sl0kvaffMh6RGDltMe5W6sDrunND3zppONAI8Y00HaEUcfy7QumsOJ");
+            builder.Services.AddSingleton(client);
+            AddSuppliers(builder.Services, client);
+
             builder.Services.AddSingleton<GardenerContext>();
             builder.Services.AddSingleton<IDataContext, PostgresContext>();
             builder.Services.AddDbContext<GTFSContext>(options =>
@@ -68,9 +73,9 @@ namespace komikaan.Harvester
             app.Run();
         }
 
-        private static void AddSuppliers(IServiceCollection serviceCollection)
+        private static void AddSuppliers(IServiceCollection serviceCollection, DiscordWebhookClient client)
         {
-            var factory = new SupplierFactory(serviceCollection);
+            var factory = new SupplierFactory(serviceCollection, client);
             factory.AddSuppliers();
         }
     }
