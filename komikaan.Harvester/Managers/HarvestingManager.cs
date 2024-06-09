@@ -1,8 +1,10 @@
 ﻿using System.Diagnostics;
 using GTFS.Entities;
 using GTFS.Entities.Enumerations;
+using JNogueira.Discord.Webhook.Client;
 using komikaan.Harvester.Contexts;
 using komikaan.Harvester.Interfaces;
+using komikaan.Harvester.Models;
 using Microsoft.Extensions.Logging;
 
 namespace komikaan.Harvester.Managers
@@ -17,13 +19,15 @@ namespace komikaan.Harvester.Managers
         private readonly IDataContext _dataContext;
         private readonly ILogger<HarvestingManager> _logger;
         private readonly GardenerContext _gardenerContext;
+        private readonly DiscordWebhookClient _discordWebHookClient;
 
-        public HarvestingManager(IEnumerable<ISupplier> suppliers, ILogger<HarvestingManager> logger, IDataContext dataContext, GardenerContext gardenerContext)
+        public HarvestingManager(IEnumerable<ISupplier> suppliers, ILogger<HarvestingManager> logger, IDataContext dataContext, GardenerContext gardenerContext, DiscordWebhookClient discordWebhookClient)
         {
             _suppliers = suppliers;
             _logger = logger;
             _dataContext = dataContext;
             _gardenerContext = gardenerContext;
+            _discordWebHookClient = discordWebhookClient;
         }
 
         public override async Task StartAsync(CancellationToken cancellationToken)
@@ -32,29 +36,48 @@ namespace komikaan.Harvester.Managers
             await base.StartAsync(cancellationToken);
         }
 
+
+        private async Task SendMessageAsync(SupplierConfiguration config, string body)
+        {
+            var message = new DiscordMessage("**Import progress for " + config.Name + "**\n" + body,
+                username: "Harvester",
+                tts: false
+            );
+            await _discordWebHookClient.SendToDiscord(message);
+
+        }
+
         public async Task Harvesting()
         {
             foreach (var supplier in _suppliers)
             {
+                var config = supplier.GetConfiguration();
+
                 try
                 {
-                    var config = supplier.GetConfiguration();
                     var stopwatch = Stopwatch.StartNew();
                     _logger.LogInformation("Starting import from {supplier}", config.Name);
-
+                    await SendMessageAsync(config, "Starting import");
                     var feed = await supplier.GetFeedAsync();
                     _logger.LogInformation("Finished retrieving data in {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
                     _logger.LogInformation("Adjusting feed started {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
+                    await SendMessageAsync(config, "Adjusting feed");
                     await AdjustFeedAsync(feed);
+                    await SendMessageAsync(config, "Finished adjusting feed");
                     _logger.LogInformation("Finished adjusting feed started {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
+                    await SendMessageAsync(config, "Database import started!");
                     await _dataContext.ImportAsync(feed);
                     _logger.LogInformation("Finished importing data in {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
                     _logger.LogInformation("Notifying the gardeners for {name}", config.Name);
+
+                    await SendMessageAsync(config, "Notifying gardeners");
                     await NotifyAsync(feed);
                     _logger.LogInformation("Notified the gardeners", config.Name);
+                    await SendMessageAsync(config, "Finished import");
                 }
                 catch (Exception error)
                 {
+                    await SendMessageAsync(config, "Import failed!");
                     _logger.LogCritical("Failed import for {supplier}", supplier);
                     _logger.LogError(error, "Following error:");
                 }
@@ -66,7 +89,7 @@ namespace komikaan.Harvester.Managers
 
         private async Task AdjustFeedAsync(GTFS.GTFSFeed feed)
         {
-            var amountPerChunk = Math.Round((decimal)feed.Stops.Count / 30, 0);
+            var amountPerChunk = Math.Round((decimal)feed.Stops.Count / 10, 0);
             var chunks = feed.Stops.ToList().Chunk((int)amountPerChunk);
             _logger.LogInformation("Split into {c} chunks of {amountPerChunk}", chunks.Count(), amountPerChunk);
             var tasks = new List<Task>();
@@ -86,40 +109,57 @@ namespace komikaan.Harvester.Managers
 
         private async Task DetectStopsType(GTFS.GTFSFeed feed, IEnumerable<Stop> stops)
         {
+            var iteration = 0;
             foreach (var stop in stops)
             {
-                if (feed.Stop_StopTimes.ContainsKey(stop.Id))
+                iteration = iteration + 1;
+                if (iteration % 100 == 0 && iteration != 0)
                 {
-                    var stopwatch = Stopwatch.StartNew();
-                    var relatedTimes = feed.Stop_StopTimes[stop.Id].Take(5).ToDictionary(x => x.TripId);
-                   // _logger.LogInformation("Got {x} times, {time}", relatedTimes.Count, stopwatch.ElapsedMilliseconds);
-                    var relatedTrips = feed.StopTime_Trips.Where(x => relatedTimes.ContainsKey(x.Key)).SelectMany(x => x.Value).ToList();
-                   // _logger.LogInformation("Got {x} relatedTrips, {time}", relatedTrips.Count, stopwatch.ElapsedMilliseconds);
-                    var relatedRoutes = feed.Routes.Where(route => relatedTrips.Any(relatedTrip => relatedTrip.RouteId.Equals(route.Id))).Take(5).ToList();
-                   // _logger.LogInformation("Got {x} relatedRoutes, {time}", relatedRoutes.Count, stopwatch.ElapsedMilliseconds);
-                    var routeTypes = relatedRoutes.Select(route => route.Type).ToList();
-                   // _logger.LogInformation("Got {x} routeTypes, {time}", routeTypes.Count, stopwatch.ElapsedMilliseconds);
-                    var groupedTypes = routeTypes.GroupBy(x => DetectStopType(x))
-                             .ToDictionary(x => x.Key, y => y.Count());
-                    _logger.LogInformation("Got {x} groupedTypes, {time}", groupedTypes.Count, stopwatch.ElapsedMilliseconds);
+                    _logger.LogInformation("{it}/{total} stop types", iteration, stops.Count());
+                }
 
-                    if (groupedTypes.Count() == 1)
+                try
+                {
+                    if (feed.Stop_StopTimes.ContainsKey(stop.Id.ToLowerInvariant()))
                     {
-                        var StopType = groupedTypes.First().Key;
-                        stop.StopType = StopType;
-                    }
-                    else if (groupedTypes.Count() > 1)
-                    {
-                        stop.StopType = StopType.Mixed;
+                        var stopwatch = Stopwatch.StartNew();
+                        var relatedTimes = feed.Stop_StopTimes[stop.Id.ToLowerInvariant()].Take(1);
+                        // _logger.LogInformation("Got {x} times, {time}", relatedTimes.Count, stopwatch.ElapsedMilliseconds);
+                        var relatedTrips = feed.StopTime_Trips[relatedTimes.First().TripId];
+                        // _logger.LogInformation("Got {x} relatedTrips, {time}", relatedTrips.Count, stopwatch.ElapsedMilliseconds);
+                        var relatedRoutes = feed.Routes.Where(route => relatedTrips.Any(x => x.RouteId.Equals(route.Id))).Take(5);
+                        // _logger.LogInformation("Got {x} relatedRoutes, {time}", relatedRoutes.Count, stopwatch.ElapsedMilliseconds);
+                        var routeTypes = relatedRoutes.Select(route => route.Type).ToList();
+                        // _logger.LogInformation("Got {x} routeTypes, {time}", routeTypes.Count, stopwatch.ElapsedMilliseconds);
+                        var groupedTypes = routeTypes.GroupBy(x => DetectStopType(x))
+                                 .ToDictionary(x => x.Key, y => y.Count());
+                       // _logger.LogInformation("Got {x} groupedTypes, {time}", groupedTypes.Count, stopwatch.ElapsedMilliseconds);
+
+                        if (groupedTypes.Count() == 1)
+                        {
+                            var StopType = groupedTypes.First().Key;
+                            stop.StopType = StopType;
+                        }
+                        else if (groupedTypes.Count() > 1)
+                        {
+                            stop.StopType = StopType.Mixed;
+                        }
+                        else
+                        {
+                            stop.StopType = StopType.Unknown;
+                        }
                     }
                     else
                     {
+                        _logger.LogInformation("Forced {name} to unknown", stop.Name);
                         stop.StopType = StopType.Unknown;
                     }
                 }
-                else
+                catch (Exception ex)
                 {
-                    _logger.LogInformation("Forced {name} to unknown", stop.Name);
+                    _logger.LogError(ex, "broken");
+
+                    _logger.LogInformation("Error Forced {name} to unknown", stop.Name);
                     stop.StopType = StopType.Unknown;
                 }
             }

@@ -1,4 +1,5 @@
-﻿using komikaan.Harvester.Enums;
+﻿using JNogueira.Discord.Webhook.Client;
+using komikaan.Harvester.Enums;
 using komikaan.Harvester.Interfaces;
 using komikaan.Harvester.Models;
 using komikaan.Harvester.Suppliers;
@@ -9,10 +10,12 @@ namespace komikaan.Harvester.Factories
     {
         private readonly List<SupplierConfiguration> _supplierConfigurations;
         private readonly IServiceCollection _services;
+        DiscordWebhookClient _discordWebHookClient;
 
         //As we have no way for easy config, we are hard coding it for now
-        public SupplierFactory(IServiceCollection services)
+        public SupplierFactory(IServiceCollection services, DiscordWebhookClient discordWebhookClient)
         {
+            _discordWebHookClient = discordWebhookClient;
             _services = services;
             _supplierConfigurations = new List<SupplierConfiguration>();
             _supplierConfigurations.Add(new SupplierConfiguration()
@@ -44,7 +47,7 @@ namespace komikaan.Harvester.Factories
         {
             foreach (var supplierConfiguration in _supplierConfigurations)
             {
-                var supplier = new GenericGTFSSupplier(supplierConfiguration);
+                var supplier = new GenericGTFSSupplier(supplierConfiguration, _discordWebHookClient);
                 _services.AddSingleton<ISupplier>(supplier);
             }
         }

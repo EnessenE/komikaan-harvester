@@ -1,5 +1,6 @@
 ﻿using GTFS;
 using GTFS.Entities;
+using JNogueira.Discord.Webhook.Client;
 using komikaan.Harvester.Interfaces;
 using komikaan.Harvester.Models;
 using System.Collections.Concurrent;
@@ -8,20 +9,28 @@ namespace komikaan.Harvester.Suppliers;
 
 public class GenericGTFSSupplier : ISupplier
 {
+    private readonly DiscordWebhookClient _discordWebHookClient;
     private readonly SupplierConfiguration _supplierConfig;
 
-    public GenericGTFSSupplier(SupplierConfiguration supplierConfig)
+    public GenericGTFSSupplier(SupplierConfiguration supplierConfig, DiscordWebhookClient discordWebhookClient)
     {
+        _discordWebHookClient = discordWebhookClient;
         _supplierConfig = supplierConfig;
     }
 
     public async Task<GTFSFeed> GetFeedAsync()
     {
+
+        await SendMessageAsync("Started reading GTFS file");
         var reader = new GTFSReader<GTFSFeed>(false, _supplierConfig.Name);
         var feed = reader.Read(_supplierConfig.Url);
-
+        await SendMessageAsync("Finished reading GTFS file");
         Console.WriteLine("Adjusting stops");
+        await SendMessageAsync("Starting data adjustment for trips");
+
         await ChunkMapTripsAsync(feed);
+
+        await SendMessageAsync("Started data adjustment stops");
         await ChunkMapStopsAsync(feed);
         foreach (var agency in feed.Agencies)
         {
@@ -63,7 +72,6 @@ public class GenericGTFSSupplier : ISupplier
             var task = new Task(async () =>
             {
                 await MapTrips(feed, chunk.ToList());
-                Console.WriteLine("FINISHED A Trips TASK");
             });
             task.Start();
             tasks.Add(task);
@@ -117,5 +125,15 @@ public class GenericGTFSSupplier : ISupplier
     public SupplierConfiguration GetConfiguration()
     {
         return _supplierConfig;
+    }
+
+    private async Task SendMessageAsync(string body)
+    {
+        var message = new DiscordMessage(            "**Import progress for " + _supplierConfig.Name + "**\n" + body,
+            username: "Harvester",
+            tts: false
+        );
+        await _discordWebHookClient.SendToDiscord(message);
+
     }
 }
