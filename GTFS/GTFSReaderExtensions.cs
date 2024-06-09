@@ -82,6 +82,7 @@ namespace GTFS
                 }
             }
             
+
             throw new ArgumentException("Could not open GTFS feed, directory or archive not found.", nameof(path));
         }
     }
