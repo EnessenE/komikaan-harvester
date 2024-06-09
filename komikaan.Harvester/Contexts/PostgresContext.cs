@@ -36,7 +36,7 @@ internal class PostgresContext : IDataContext
             operation.MergeKeepIdentity = true;
 
         });
-        _gtfsContext.Stops.BulkInsert(feed.Stops, operation =>
+        _gtfsContext.Stops.BulkMerge(feed.Stops, operation =>
         {
             operation.InsertIfNotExists = true;
             operation.MergeKeepIdentity = true;
