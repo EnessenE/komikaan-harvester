@@ -1,6 +1,7 @@
 ﻿using GTFS;
 using GTFS.Entities;
 using komikaan.Harvester.Interfaces;
+using Microsoft.Extensions.Options;
 using Z.BulkOperations;
 
 namespace komikaan.Harvester.Contexts;
@@ -22,55 +23,63 @@ internal class PostgresContext : IDataContext
         {
             operation.InsertIfNotExists = true;
             operation.MergeKeepIdentity = true;
+            operation.ColumnPrimaryKeyExpression = c => new { c.Id, c.DataOrigin };
 
         });
         _gtfsContext.Routes.BulkInsert(feed.Routes, operation =>
         {
             operation.InsertIfNotExists = true;
             operation.MergeKeepIdentity = true;
+            operation.ColumnPrimaryKeyExpression = c => new { c.Id, c.DataOrigin };
 
         });
         _gtfsContext.Trips.BulkInsert(feed.Trips, operation =>
         {
             operation.InsertIfNotExists = true;
             operation.MergeKeepIdentity = true;
+            operation.ColumnPrimaryKeyExpression = c => new { c.Id, c.DataOrigin };
 
         });
         _gtfsContext.Stops.BulkMerge(feed.Stops, operation =>
         {
             operation.InsertIfNotExists = true;
             operation.MergeKeepIdentity = true;
+            operation.ColumnPrimaryKeyExpression = c => new { c.Id, c.DataOrigin };
 
         });
         _gtfsContext.Calendars.BulkInsert(feed.Calendars, operation =>
         {
             operation.InsertIfNotExists = true;
             operation.MergeKeepIdentity = true;
+            operation.ColumnPrimaryKeyExpression = c => new { c.ServiceId, c.DataOrigin };
 
         });
         _gtfsContext.CalendarDates.BulkInsert(feed.CalendarDates, operation =>
         {
             operation.InsertIfNotExists = true;
             operation.MergeKeepIdentity = true;
+            operation.ColumnPrimaryKeyExpression = c => new { c.ServiceId, c.Date, c.DataOrigin };
 
         });
         _gtfsContext.Frequencies.BulkInsert(feed.Frequencies, operation =>
         {
             operation.InsertIfNotExists = true;
             operation.MergeKeepIdentity = true;
+            operation.ColumnPrimaryKeyExpression = c => new { c.TripId, c.DataOrigin, c.StartTime, c.EndTime };
 
         });
         _gtfsContext.StopTimes.BulkInsert(feed.StopTimes, operation =>
         {
             operation.InsertIfNotExists = true;
             operation.MergeKeepIdentity = true;
+            operation.ColumnPrimaryKeyExpression = c => new { c.TripId, c.StopId, c.DataOrigin };
 
         });
         _gtfsContext.Shapes.BulkInsert(feed.Shapes.ToList(), operation =>
         {
             operation.InsertIfNotExists = true;
             operation.MergeKeepIdentity = true;
-            operation.AllowDuplicateKeys = true;
+            operation.ColumnPrimaryKeyExpression = c => new { c.Id, c.DataOrigin, c.Sequence };
         });
 
         await _gtfsContext.SaveChangesAsync();

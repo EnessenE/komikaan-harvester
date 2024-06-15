@@ -40,6 +40,10 @@ namespace GTFS.Entities
     /// </summary>
     public abstract class GTFSEntity
     {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public Guid InternalId { get; set; } = Guid.NewGuid();
+
         [MaxLength(100)]
         [Required]
         public string DataOrigin { get; set; } = GTFSReader<GTFSFeed>.DataOriginName;

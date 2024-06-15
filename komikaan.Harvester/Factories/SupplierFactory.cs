@@ -25,7 +25,13 @@ namespace komikaan.Harvester.Factories
                 Name = "OpenOV",
                 Url = "C:\\Users\\maile\\Downloads\\gtfs-nl.zip"
             });
-
+            _supplierConfigurations.Add(new SupplierConfiguration()
+            {
+                DataType = SupplierType.GTFS,
+                RetrievalType = RetrievalType.REST,
+                Name = "flixbus",
+                Url = "C:\\Users\\maile\\Downloads\\flixbus.zip"
+            });
             _supplierConfigurations.Add(new SupplierConfiguration()
             {
                 DataType = SupplierType.GTFS,

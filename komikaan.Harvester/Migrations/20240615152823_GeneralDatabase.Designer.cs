@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using komikaan.Harvester.Contexts;
 
@@ -12,8 +13,8 @@ using komikaan.Harvester.Contexts;
 namespace komikaan.Harvester.Migrations
 {
     [DbContext(typeof(GTFSContext))]
-    [Migration("20240601094814_StopIdIndex")]
-    partial class StopIdIndex
+    [Migration("20240615152823_GeneralDatabase")]
+    partial class GeneralDatabase
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -23,18 +24,21 @@ namespace komikaan.Harvester.Migrations
                 .HasAnnotation("ProductVersion", "8.0.6")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "postgis");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("GTFS.Entities.Agency", b =>
                 {
+                    b.Property<Guid>("InternalId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("internal_id");
+
                     b.Property<string>("DataOrigin")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("data_origin");
-
-                    b.Property<string>("Id")
-                        .HasColumnType("text")
-                        .HasColumnName("id");
 
                     b.Property<string>("Email")
                         .HasColumnType("text")
@@ -44,11 +48,16 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("text")
                         .HasColumnName("fare_url");
 
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
                     b.Property<string>("LanguageCode")
                         .HasColumnType("text")
                         .HasColumnName("language_code");
 
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("name");
 
@@ -64,7 +73,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("text")
                         .HasColumnName("url");
 
-                    b.HasKey("DataOrigin", "Id")
+                    b.HasKey("InternalId")
                         .HasName("pk_agencies");
 
                     b.HasIndex("DataOrigin")
@@ -78,14 +87,16 @@ namespace komikaan.Harvester.Migrations
 
             modelBuilder.Entity("GTFS.Entities.Calendar", b =>
                 {
+                    b.Property<Guid>("InternalId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("internal_id");
+
                     b.Property<string>("DataOrigin")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("data_origin");
-
-                    b.Property<string>("ServiceId")
-                        .HasColumnType("text")
-                        .HasColumnName("service_id");
 
                     b.Property<DateTimeOffset>("EndDate")
                         .HasColumnType("timestamp with time zone")
@@ -107,6 +118,11 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("saturday");
 
+                    b.Property<string>("ServiceId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("service_id");
+
                     b.Property<DateTimeOffset>("StartDate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("start_date");
@@ -127,7 +143,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("wednesday");
 
-                    b.HasKey("DataOrigin", "ServiceId")
+                    b.HasKey("InternalId")
                         .HasName("pk_calenders");
 
                     b.HasIndex("DataOrigin")
@@ -141,14 +157,16 @@ namespace komikaan.Harvester.Migrations
 
             modelBuilder.Entity("GTFS.Entities.CalendarDate", b =>
                 {
+                    b.Property<Guid>("InternalId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("internal_id");
+
                     b.Property<string>("DataOrigin")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("data_origin");
-
-                    b.Property<string>("Id")
-                        .HasColumnType("text")
-                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset>("Date")
                         .HasColumnType("timestamp with time zone")
@@ -159,10 +177,11 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnName("exception_type");
 
                     b.Property<string>("ServiceId")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("service_id");
 
-                    b.HasKey("DataOrigin", "Id")
+                    b.HasKey("InternalId")
                         .HasName("pk_calendar_dates");
 
                     b.HasIndex("DataOrigin")
@@ -176,20 +195,19 @@ namespace komikaan.Harvester.Migrations
 
             modelBuilder.Entity("GTFS.Entities.Frequency", b =>
                 {
+                    b.Property<Guid>("InternalId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("internal_id");
+
                     b.Property<string>("DataOrigin")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("data_origin");
 
-                    b.Property<string>("TripId")
-                        .HasColumnType("text")
-                        .HasColumnName("trip_id");
-
-                    b.Property<string>("StartTime")
-                        .HasColumnType("text")
-                        .HasColumnName("start_time");
-
                     b.Property<string>("EndTime")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("end_time");
 
@@ -198,10 +216,21 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnName("exact_times");
 
                     b.Property<string>("HeadwaySecs")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("headway_secs");
 
-                    b.HasKey("DataOrigin", "TripId", "StartTime", "EndTime")
+                    b.Property<string>("StartTime")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("start_time");
+
+                    b.Property<string>("TripId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("trip_id");
+
+                    b.HasKey("InternalId")
                         .HasName("pk_frequencies");
 
                     b.HasIndex("DataOrigin")
@@ -212,18 +241,25 @@ namespace komikaan.Harvester.Migrations
 
             modelBuilder.Entity("GTFS.Entities.Pathway", b =>
                 {
+                    b.Property<Guid>("InternalId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("internal_id");
+
                     b.Property<string>("DataOrigin")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("data_origin");
 
+                    b.Property<string>("FromStopId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("from_stop_id");
+
                     b.Property<string>("Id")
                         .HasColumnType("text")
                         .HasColumnName("id");
-
-                    b.Property<string>("FromStopId")
-                        .HasColumnType("text")
-                        .HasColumnName("from_stop_id");
 
                     b.Property<int>("IsBidirectional")
                         .HasColumnType("integer")
@@ -246,10 +282,12 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnName("pathway_mode");
 
                     b.Property<string>("ReversedSignpostedAs")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("reversed_signposted_as");
 
                     b.Property<string>("SignpostedAs")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("signposted_as");
 
@@ -258,6 +296,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnName("stair_count");
 
                     b.Property<string>("ToStopId")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("to_stop_id");
 
@@ -265,7 +304,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("traversal_time");
 
-                    b.HasKey("DataOrigin", "Id")
+                    b.HasKey("InternalId")
                         .HasName("pk_pathway");
 
                     b.HasIndex("DataOrigin")
@@ -276,16 +315,13 @@ namespace komikaan.Harvester.Migrations
 
             modelBuilder.Entity("GTFS.Entities.Route", b =>
                 {
-                    b.Property<string>("DataOrigin")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("data_origin");
-
-                    b.Property<string>("Id")
-                        .HasColumnType("text")
-                        .HasColumnName("id");
+                    b.Property<Guid>("InternalId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("internal_id");
 
                     b.Property<string>("AgencyId")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("agency_id");
 
@@ -293,15 +329,27 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("text")
                         .HasColumnName("color");
 
+                    b.Property<string>("DataOrigin")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("data_origin");
+
                     b.Property<string>("Description")
                         .HasColumnType("text")
                         .HasColumnName("description");
 
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
                     b.Property<string>("LongName")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("long_name");
 
                     b.Property<string>("ShortName")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("short_name");
 
@@ -317,7 +365,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("text")
                         .HasColumnName("url");
 
-                    b.HasKey("DataOrigin", "Id")
+                    b.HasKey("InternalId")
                         .HasName("pk_routes");
 
                     b.HasIndex("AgencyId")
@@ -337,22 +385,24 @@ namespace komikaan.Harvester.Migrations
 
             modelBuilder.Entity("GTFS.Entities.Shape", b =>
                 {
-                    b.Property<string>("DataOrigin")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("data_origin");
-
                     b.Property<string>("Id")
                         .HasColumnType("text")
                         .HasColumnName("id");
 
-                    b.Property<long>("Sequence")
-                        .HasColumnType("bigint")
-                        .HasColumnName("sequence");
+                    b.Property<string>("DataOrigin")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("data_origin");
 
                     b.Property<double?>("DistanceTravelled")
                         .HasColumnType("double precision")
                         .HasColumnName("distance_travelled");
+
+                    b.Property<Point>("GeoLocation")
+                        .IsRequired()
+                        .HasColumnType("geometry")
+                        .HasColumnName("geo_location");
 
                     b.Property<int>("InternalId")
                         .ValueGeneratedOnAdd()
@@ -369,7 +419,11 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("double precision")
                         .HasColumnName("longitude");
 
-                    b.HasKey("DataOrigin", "Id", "Sequence")
+                    b.Property<long>("Sequence")
+                        .HasColumnType("bigint")
+                        .HasColumnName("sequence");
+
+                    b.HasKey("Id")
                         .HasName("pk_shapes");
 
                     b.HasIndex("DataOrigin")
@@ -383,11 +437,6 @@ namespace komikaan.Harvester.Migrations
 
             modelBuilder.Entity("GTFS.Entities.Stop", b =>
                 {
-                    b.Property<string>("DataOrigin")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("data_origin");
-
                     b.Property<string>("Id")
                         .HasColumnType("text")
                         .HasColumnName("id");
@@ -396,9 +445,25 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("text")
                         .HasColumnName("code");
 
+                    b.Property<string>("DataOrigin")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("data_origin");
+
                     b.Property<string>("Description")
                         .HasColumnType("text")
                         .HasColumnName("description");
+
+                    b.Property<Point>("GeoLocation")
+                        .IsRequired()
+                        .HasColumnType("geometry")
+                        .HasColumnName("geo_location");
+
+                    b.Property<string>("InternalId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("internal_id");
 
                     b.Property<double>("Latitude")
                         .HasColumnType("double precision")
@@ -417,6 +482,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnName("longitude");
 
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("name");
 
@@ -427,6 +493,10 @@ namespace komikaan.Harvester.Migrations
                     b.Property<string>("PlatformCode")
                         .HasColumnType("text")
                         .HasColumnName("platform_code");
+
+                    b.Property<int>("StopType")
+                        .HasColumnType("integer")
+                        .HasColumnName("stop_type");
 
                     b.Property<string>("Timezone")
                         .HasColumnType("text")
@@ -444,7 +514,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("text")
                         .HasColumnName("zone");
 
-                    b.HasKey("DataOrigin", "Id")
+                    b.HasKey("Id")
                         .HasName("pk_stops");
 
                     b.HasIndex("DataOrigin")
@@ -453,11 +523,17 @@ namespace komikaan.Harvester.Migrations
                     b.HasIndex("Id")
                         .HasDatabaseName("ix_stops_id");
 
+                    b.HasIndex("InternalId")
+                        .HasDatabaseName("ix_stops_internal_id");
+
                     b.HasIndex("Name")
                         .HasDatabaseName("ix_stops_name");
 
                     b.HasIndex("ParentStation")
                         .HasDatabaseName("ix_stops_parent_station");
+
+                    b.HasIndex("Id", "ParentStation")
+                        .HasDatabaseName("ix_stops_id_parent_station");
 
                     b.HasIndex("Name", "ParentStation")
                         .HasDatabaseName("ix_stops_name_parent_station");
@@ -467,26 +543,20 @@ namespace komikaan.Harvester.Migrations
 
             modelBuilder.Entity("GTFS.Entities.StopTime", b =>
                 {
-                    b.Property<string>("DataOrigin")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("data_origin");
-
-                    b.Property<string>("TripId")
-                        .HasColumnType("text")
-                        .HasColumnName("trip_id");
-
-                    b.Property<string>("StopId")
-                        .HasColumnType("text")
-                        .HasColumnName("stop_id");
-
-                    b.Property<long>("StopSequence")
-                        .HasColumnType("bigint")
-                        .HasColumnName("stop_sequence");
+                    b.Property<Guid>("InternalId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("internal_id");
 
                     b.Property<TimeOnly?>("ArrivalTime")
                         .HasColumnType("time without time zone")
                         .HasColumnName("arrival_time");
+
+                    b.Property<string>("DataOrigin")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("data_origin");
 
                     b.Property<TimeOnly?>("DepartureTime")
                         .HasColumnType("time without time zone")
@@ -508,15 +578,35 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("text")
                         .HasColumnName("stop_headsign");
 
+                    b.Property<string>("StopId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("stop_id");
+
+                    b.Property<long>("StopSequence")
+                        .HasColumnType("bigint")
+                        .HasColumnName("stop_sequence");
+
                     b.Property<int>("TimepointType")
                         .HasColumnType("integer")
                         .HasColumnName("timepoint_type");
 
-                    b.HasKey("DataOrigin", "TripId", "StopId", "StopSequence")
+                    b.Property<string>("TripId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("trip_id");
+
+                    b.HasKey("InternalId")
                         .HasName("pk_stop_times");
+
+                    b.HasIndex("ArrivalTime")
+                        .HasDatabaseName("ix_stop_times_arrival_time");
 
                     b.HasIndex("DataOrigin")
                         .HasDatabaseName("ix_stop_times_data_origin");
+
+                    b.HasIndex("DepartureTime")
+                        .HasDatabaseName("ix_stop_times_departure_time");
 
                     b.HasIndex("StopId")
                         .HasDatabaseName("ix_stop_times_stop_id");
@@ -524,29 +614,41 @@ namespace komikaan.Harvester.Migrations
                     b.HasIndex("TripId")
                         .HasDatabaseName("ix_stop_times_trip_id");
 
+                    b.HasIndex("ArrivalTime", "DepartureTime")
+                        .HasDatabaseName("ix_stop_times_arrival_time_departure_time");
+
                     b.ToTable("stop_times", (string)null);
                 });
 
             modelBuilder.Entity("GTFS.Entities.Transfer", b =>
                 {
+                    b.Property<Guid>("InternalId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("internal_id");
+
                     b.Property<string>("DataOrigin")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("data_origin");
+
+                    b.Property<string>("FromStopId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("from_stop_id");
 
                     b.Property<string>("Id")
                         .HasColumnType("text")
                         .HasColumnName("id");
 
-                    b.Property<string>("FromStopId")
-                        .HasColumnType("text")
-                        .HasColumnName("from_stop_id");
-
                     b.Property<string>("MinimumTransferTime")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("minimum_transfer_time");
 
                     b.Property<string>("ToStopId")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("to_stop_id");
 
@@ -554,7 +656,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("transfer_type");
 
-                    b.HasKey("DataOrigin", "Id")
+                    b.HasKey("InternalId")
                         .HasName("pk_transfers");
 
                     b.HasIndex("DataOrigin")
@@ -565,14 +667,10 @@ namespace komikaan.Harvester.Migrations
 
             modelBuilder.Entity("GTFS.Entities.Trip", b =>
                 {
-                    b.Property<string>("DataOrigin")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("data_origin");
-
-                    b.Property<string>("Id")
-                        .HasColumnType("text")
-                        .HasColumnName("id");
+                    b.Property<Guid>("InternalId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("internal_id");
 
                     b.Property<int?>("AccessibilityType")
                         .HasColumnType("integer")
@@ -582,6 +680,12 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("text")
                         .HasColumnName("block_id");
 
+                    b.Property<string>("DataOrigin")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("data_origin");
+
                     b.Property<int?>("Direction")
                         .HasColumnType("integer")
                         .HasColumnName("direction");
@@ -590,11 +694,17 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("text")
                         .HasColumnName("headsign");
 
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
                     b.Property<string>("RouteId")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("route_id");
 
                     b.Property<string>("ServiceId")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("service_id");
 
@@ -606,7 +716,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("text")
                         .HasColumnName("short_name");
 
-                    b.HasKey("DataOrigin", "Id")
+                    b.HasKey("InternalId")
                         .HasName("pk_trips");
 
                     b.HasIndex("DataOrigin")

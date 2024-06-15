@@ -98,7 +98,6 @@ namespace komikaan.Harvester.Managers
                 var task = new Task(async () =>
                 {
                     await DetectStopsType(feed, stops);
-                    _logger.LogInformation("FINISHED A TASK");
                 });
                 task.Start();
                 tasks.Add(task);
@@ -125,7 +124,7 @@ namespace komikaan.Harvester.Managers
                         var stopwatch = Stopwatch.StartNew();
                         var relatedTimes = feed.Stop_StopTimes[stop.Id.ToLowerInvariant()].Take(1);
                         // _logger.LogInformation("Got {x} times, {time}", relatedTimes.Count, stopwatch.ElapsedMilliseconds);
-                        var relatedTrips = feed.StopTime_Trips[relatedTimes.First().TripId];
+                        var relatedTrips = feed.StopTime_Trips[relatedTimes.First().TripId.ToLowerInvariant()];
                         // _logger.LogInformation("Got {x} relatedTrips, {time}", relatedTrips.Count, stopwatch.ElapsedMilliseconds);
                         var relatedRoutes = feed.Routes.Where(route => relatedTrips.Any(x => x.RouteId.Equals(route.Id))).Take(5);
                         // _logger.LogInformation("Got {x} relatedRoutes, {time}", relatedRoutes.Count, stopwatch.ElapsedMilliseconds);
@@ -192,8 +191,8 @@ namespace komikaan.Harvester.Managers
                 case RouteTypeExtended.RailTaxiService: return StopType.Train;
                 case RouteTypeExtended.AdditionalRailService: return StopType.Train;
                 case RouteTypeExtended.InterRegionalRailService: return StopType.Train;
-                case RouteTypeExtended.UrbanRailwayService: return StopType.Train;
-                case RouteTypeExtended.UrbanRailwayServiceDefault: return StopType.Train;
+                case RouteTypeExtended.UrbanRailwayService: return StopType.Metro;
+                case RouteTypeExtended.UrbanRailwayServiceDefault: return StopType.Metro;
                 case RouteTypeExtended.HighSpeedRailService: return StopType.Train;
                 case RouteTypeExtended.AllRailServices: return StopType.Train;
                 case RouteTypeExtended.BusService: return StopType.Bus;
@@ -213,6 +212,23 @@ namespace komikaan.Harvester.Managers
                 case RouteTypeExtended.RegionalTramService: return StopType.Tram;
                 case RouteTypeExtended.ShuttleTramService: return StopType.Tram;
                 case RouteTypeExtended.SightseeingTramService: return StopType.Tram;
+                case RouteTypeExtended.WaterTaxiService: return StopType.Ferry;
+                case RouteTypeExtended.WaterTransportService: return StopType.Ferry;
+                case RouteTypeExtended.AllWaterTransportServices: return StopType.Ferry;
+                case RouteTypeExtended.FerryService: return StopType.Ferry;
+                case RouteTypeExtended.AirportLinkFerryService: return StopType.Ferry;
+                case RouteTypeExtended.CarHighSpeedFerryService: return StopType.Ferry;
+                case RouteTypeExtended.InternationalCarFerryService: return StopType.Ferry;
+                case RouteTypeExtended.InternationalPassengerFerryService: return StopType.Ferry;
+                case RouteTypeExtended.LocalCarFerryService: return StopType.Ferry;
+                case RouteTypeExtended.NationalCarFerryService: return StopType.Ferry;
+                case RouteTypeExtended.PassengerHighSpeedFerryService: return StopType.Ferry;
+                case RouteTypeExtended.RegionalCarFerryService: return StopType.Ferry;
+                case RouteTypeExtended.TrainFerryService: return StopType.Ferry;
+                case RouteTypeExtended.ShuttleFerryService: return StopType.Ferry;
+                case RouteTypeExtended.ScheduledFerryService: return StopType.Ferry;
+                case RouteTypeExtended.RoadLinkFerryService: return StopType.Ferry;
+                case RouteTypeExtended.RegionalPassengerFerryService: return StopType.Ferry;
 
                 default:
                     _logger.LogInformation("Unknown type: {type}", routeType);
