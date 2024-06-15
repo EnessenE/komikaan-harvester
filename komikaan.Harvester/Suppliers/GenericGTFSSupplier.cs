@@ -51,7 +51,6 @@ public class GenericGTFSSupplier : ISupplier
             var task = new Task(async () =>
             {
                 await MapStops(feed, chunk.ToList());
-                Console.WriteLine("FINISHED A STOPTIME TASK");
             });
             task.Start();
             tasks.Add(task);

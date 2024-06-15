@@ -24,7 +24,6 @@ using GTFS.Attributes;
 using GTFS.Entities.Enumerations;
 using GTFS.InternalExtensions;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using RequiredAttribute = GTFS.Attributes.RequiredAttribute;
 
@@ -74,7 +73,7 @@ namespace GTFS.Entities
         /// Gets or sets  the text that appears on a sign that identifies the trip's destination to passengers. Use this field to distinguish between different patterns of service in the same route. If the headsign changes during a trip, you can override the trip_headsign by specifying values for the the stop_headsign field in stop_times.txt.
         /// </summary>
         [FieldName("trip_headsign")]
-        public string Headsign
+        public string? Headsign
         {
             get => _headsign;
             set => _headsign = value?.Intern();
@@ -84,7 +83,7 @@ namespace GTFS.Entities
         /// Gets or sets the text that appears in schedules and sign boards to identify the trip to passengers, for example, to identify train numbers for commuter rail trips. If riders do not commonly rely on trip names, please leave this field blank.
         /// </summary>
         [FieldName("trip_short_name")]
-        public string ShortName
+        public string? ShortName
         {
             get => _shortName;
             set => _shortName = value?.Intern();
