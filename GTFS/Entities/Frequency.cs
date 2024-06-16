@@ -24,6 +24,8 @@ using System.ComponentModel.DataAnnotations;
 using GTFS.Attributes;
 using System.ComponentModel.DataAnnotations.Schema;
 using GTFS.InternalExtensions;
+using Microsoft.EntityFrameworkCore;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace GTFS.Entities
 {
@@ -32,6 +34,7 @@ namespace GTFS.Entities
     /// </summary>
     [FileName("frequency")]
     [Table("frequencies")]
+    [Index(nameof(TripId), nameof(DataOrigin), nameof(StartTime), nameof(EndTime))]
     public class Frequency : GTFSEntity
     {
         private string _tripId;

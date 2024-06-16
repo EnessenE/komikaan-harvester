@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -12,9 +13,11 @@ using komikaan.Harvester.Contexts;
 namespace komikaan.Harvester.Migrations
 {
     [DbContext(typeof(GTFSContext))]
-    partial class GTFSContextModelSnapshot : ModelSnapshot
+    [Migration("20240616092444_LastUpdated")]
+    partial class LastUpdated
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -52,10 +55,6 @@ namespace komikaan.Harvester.Migrations
                     b.Property<string>("LanguageCode")
                         .HasColumnType("text")
                         .HasColumnName("language_code");
-
-                    b.Property<DateTimeOffset>("LastUpdated")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("last_updated");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -118,10 +117,6 @@ namespace komikaan.Harvester.Migrations
                     b.Property<bool>("Friday")
                         .HasColumnType("boolean")
                         .HasColumnName("friday");
-
-                    b.Property<DateTimeOffset>("LastUpdated")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("last_updated");
 
                     b.Property<byte>("Mask")
                         .HasColumnType("smallint")
@@ -202,10 +197,6 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("exception_type");
 
-                    b.Property<DateTimeOffset>("LastUpdated")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("last_updated");
-
                     b.Property<string>("ServiceId")
                         .IsRequired()
                         .HasColumnType("text")
@@ -258,10 +249,6 @@ namespace komikaan.Harvester.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("headway_secs");
-
-                    b.Property<DateTimeOffset>("LastUpdated")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("last_updated");
 
                     b.Property<string>("StartTime")
                         .IsRequired()
@@ -316,10 +303,6 @@ namespace komikaan.Harvester.Migrations
                     b.Property<int>("IsBidirectional")
                         .HasColumnType("integer")
                         .HasColumnName("is_bidirectional");
-
-                    b.Property<DateTimeOffset>("LastUpdated")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("last_updated");
 
                     b.Property<double?>("Length")
                         .HasColumnType("double precision")
@@ -405,10 +388,6 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("text")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("LastUpdated")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("last_updated");
-
                     b.Property<string>("LongName")
                         .IsRequired()
                         .HasColumnType("text")
@@ -489,10 +468,6 @@ namespace komikaan.Harvester.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("InternalId"));
 
-                    b.Property<DateTimeOffset>("LastUpdated")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("last_updated");
-
                     b.Property<double>("Latitude")
                         .HasColumnType("double precision")
                         .HasColumnName("latitude");
@@ -555,10 +530,6 @@ namespace komikaan.Harvester.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("internal_id");
-
-                    b.Property<DateTimeOffset>("LastUpdated")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("last_updated");
 
                     b.Property<double>("Latitude")
                         .HasColumnType("double precision")
@@ -667,10 +638,6 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("drop_off_type");
 
-                    b.Property<DateTimeOffset>("LastUpdated")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("last_updated");
-
                     b.Property<int?>("PickupType")
                         .HasColumnType("integer")
                         .HasColumnName("pickup_type");
@@ -756,10 +723,6 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("text")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("LastUpdated")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("last_updated");
-
                     b.Property<string>("MinimumTransferTime")
                         .IsRequired()
                         .HasColumnType("text")
@@ -821,10 +784,6 @@ namespace komikaan.Harvester.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text")
                         .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("LastUpdated")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("last_updated");
 
                     b.Property<string>("RouteId")
                         .IsRequired()
