@@ -41,6 +41,7 @@ namespace GTFS.Entities
     [Index(nameof(ArrivalTime), nameof(DepartureTime))]
     [Index(nameof(ArrivalTime))]
     [Index(nameof(DepartureTime))]
+    [Index(nameof(TripId), nameof(StopId), nameof(DataOrigin))]
     public class StopTime : GTFSEntity, IComparable
     {
         private string? _stopId;

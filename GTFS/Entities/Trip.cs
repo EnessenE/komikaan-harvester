@@ -34,6 +34,8 @@ namespace GTFS.Entities
     /// </summary>
     [FileName("trip")]
     [Table("trips")]
+    [Index(nameof(Id))]
+    [Index(nameof(Id), nameof(DataOrigin))]
     [Index(nameof(RouteId))]
     [Index(nameof(ServiceId))]
     [Index(nameof(ShapeId))]

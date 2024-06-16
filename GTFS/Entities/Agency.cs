@@ -34,6 +34,8 @@ namespace GTFS.Entities
     [FileName("agency")]
     [Table("agencies")]
     [Index(nameof(Id), nameof(Name))]
+    [Index(nameof(Id))]
+    [Index(nameof(Id), nameof(DataOrigin))]
     public class Agency : GTFSEntity
     {
         private string _id;

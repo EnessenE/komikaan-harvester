@@ -37,6 +37,7 @@ namespace GTFS.Entities
     [FileName("stops")]
     [Table("stops")]
     [Index(nameof(Id))]
+    [Index(nameof(Id), nameof(DataOrigin))]
     [Index(nameof(InternalId))]
     [Index(nameof(Name))]
     [Index(nameof(ParentStation))]
