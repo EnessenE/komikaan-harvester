@@ -2,6 +2,7 @@
 using System.Text.Json;
 using GTFS.Entities;
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Index.HPRtree;
 using Route = GTFS.Entities.Route;
 
 namespace komikaan.Harvester.Contexts;
@@ -28,28 +29,108 @@ internal class GTFSContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasPostgresExtension("postgis");
-        modelBuilder.Entity<Frequency>();
-        modelBuilder.Entity<Shape>();
-        modelBuilder.Entity<Stop>();
-        modelBuilder.Entity<Agency>();
+        modelBuilder.Entity<Frequency>().HasKey(item =>
+        new
+        {
+            item.InternalId,
+            item.DataOrigin,
+            item.TripId,
+            item.StartTime,
+            item.EndTime
+        });
+        modelBuilder.Entity<Shape>().HasKey(shape =>
+        new
+        {
+            shape.InternalId,
+            shape.DataOrigin,
+            shape.Id,
+            shape.Sequence
+        });
+        modelBuilder.Entity<Stop>().HasKey(item =>
+        new
+        {
+            item.InternalId,
+            item.DataOrigin,
+            item.Id
+        });
+        modelBuilder.Entity<Agency>().HasKey(item =>
+        new
+        {
+            item.InternalId,
+            item.DataOrigin,
+            item.Id
+        });
 
-        modelBuilder.Entity<Calendar>();
+        modelBuilder.Entity<Calendar>().HasKey(item =>
+        new
+        {
+            item.InternalId,
+            item.DataOrigin,
+            item.ServiceId
+        });
 
-        modelBuilder.Entity<Stop>();
+        modelBuilder.Entity<Stop>().HasKey(item =>
+        new
+        {
+            item.InternalId,
+            item.DataOrigin,
+            item.Id
+        });
 
-        modelBuilder.Entity<Pathway>();
+        modelBuilder.Entity<Pathway>().HasKey(item =>
+        new
+        {
+            item.InternalId,
+            item.DataOrigin,
+            item.Id
+        });
 
-        modelBuilder.Entity<Route>();
+        modelBuilder.Entity<Route>().HasKey(item =>
+        new
+        {
+            item.InternalId,
+            item.DataOrigin,
+            item.Id
+        });
 
-        modelBuilder.Entity<StopTime>();
+        modelBuilder.Entity<StopTime>().HasKey(item =>
+        new
+        {
+            item.InternalId,
+            item.DataOrigin,
+            item.TripId,
+            item.StopId,
+            item.StopSequence
+        });
 
-        modelBuilder.Entity<Transfer>();
+        modelBuilder.Entity<Transfer>().HasKey(item =>
+        new
+        {
+            item.InternalId,
+            item.DataOrigin,
+            item.Id
+        });
 
-        modelBuilder.Entity<CalendarDate>();
+        modelBuilder.Entity<CalendarDate>().HasKey(item =>
+        new
+        {
+            item.InternalId,
+            item.DataOrigin,
+            item.Date,
+            item.ServiceId
+        });
 
-        modelBuilder.Entity<Trip>();
+        modelBuilder.Entity<Trip>().HasKey(item =>
+        new
+        {
+            item.InternalId,
+            item.DataOrigin,
+            item.Id
+        });
 
     }
+
+
 
     protected void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.UseNpgsql("Host=my_host;Database=my_db;Username=my_user;Password=my_pw");
