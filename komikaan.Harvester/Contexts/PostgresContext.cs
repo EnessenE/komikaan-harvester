@@ -1,5 +1,6 @@
 ﻿using GTFS;
 using komikaan.Harvester.Interfaces;
+using Microsoft.Extensions.Options;
 
 namespace komikaan.Harvester.Contexts;
 
@@ -62,14 +63,11 @@ internal class PostgresContext : IDataContext
         {
             operation.InsertIfNotExists = true;
             operation.MergeKeepIdentity = true;
-            operation.ColumnPrimaryKeyExpression = c => new { c.TripId, c.DataOrigin, c.StartTime, c.EndTime };
-
         });
-        _gtfsContext.StopTimes.BulkMerge(feed.StopTimes, operation =>
+        _gtfsContext.StopTimes.BulkMerge(feed.StopTimes.ToList(), operation =>
         {
             operation.InsertIfNotExists = true;
             operation.MergeKeepIdentity = true;
-            operation.ColumnPrimaryKeyExpression = c => new { c.TripId, c.StopId, c.DataOrigin, c.StopSequence };
 
         });
         _gtfsContext.Shapes.BulkMerge(feed.Shapes.ToList(), operation =>

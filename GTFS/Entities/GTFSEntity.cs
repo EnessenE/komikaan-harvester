@@ -44,7 +44,6 @@ namespace GTFS.Entities
     {
         private Guid _internalGuid = Guid.NewGuid();
 
-        [Key]
         public Guid InternalId { get => _internalGuid; set => _internalGuid = value; }
 
         [Required]
