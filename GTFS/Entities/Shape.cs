@@ -42,9 +42,6 @@ namespace GTFS.Entities
     {
         private string _id;
 
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int InternalId { get; set; }
-
         /// <summary>
         /// Gets or sets an ID that uniquely identifies a shape.
         /// </summary>

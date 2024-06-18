@@ -38,7 +38,6 @@ namespace GTFS.Entities
     [Table("stops")]
     [Index(nameof(Id))]
     [Index(nameof(Id), nameof(DataOrigin))]
-    [Index(nameof(InternalId))]
     [Index(nameof(Name))]
     [Index(nameof(ParentStation))]
     [Index(nameof(Name), nameof(ParentStation))]
@@ -48,13 +47,7 @@ namespace GTFS.Entities
     {
         private string _name;
         private string _code;
-        private string _internalId;
 
-        /// <summary>
-        /// Gets or sets an ID that uniquely identifies a stop or station. Multiple routes may use the same stop. The stop_id is dataset unique.
-        /// </summary>
-        [Required]
-        public string InternalId { get => DataOrigin + "_" + Id; set => _internalId = value; }
 
         [Required]
         [FieldName("stop_id")]
