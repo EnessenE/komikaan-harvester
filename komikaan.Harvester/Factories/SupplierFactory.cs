@@ -18,35 +18,42 @@ namespace komikaan.Harvester.Factories
             _discordWebHookClient = discordWebhookClient;
             _services = services;
             _supplierConfigurations = new List<SupplierConfiguration>();
-            _supplierConfigurations.Add(new SupplierConfiguration()
-            {
-                DataType = SupplierType.GTFS,
-                RetrievalType = RetrievalType.REST,
-                Name = "OpenOV",
-                Url = "C:\\Users\\maile\\Downloads\\gtfs-nl.zip"
-            });
+            //_supplierConfigurations.Add(new SupplierConfiguration()
+            //{
+            //    DataType = SupplierType.GTFS,
+            //    RetrievalType = RetrievalType.REST,
+            //    Name = "OpenOV",
+            //    Url = "C:\\Users\\maile\\Downloads\\gtfs-nl.zip"
+            //});
             _supplierConfigurations.Add(new SupplierConfiguration()
             {
                 DataType = SupplierType.GTFS,
                 RetrievalType = RetrievalType.REST,
                 Name = "flixbus",
                 Url = "C:\\Users\\maile\\Downloads\\flixbus.zip"
-            });
+            }); 
             _supplierConfigurations.Add(new SupplierConfiguration()
             {
                 DataType = SupplierType.GTFS,
                 RetrievalType = RetrievalType.REST,
-                Name = "NMBS",
-                Url = "C:\\Users\\maile\\Downloads\\NMBS.zip"
+                Name = "iledefrance",
+                Url = "C:\\Users\\maile\\Downloads\\IDFM-gtfs.zip"
             });
-            _supplierConfigurations.Add(new SupplierConfiguration()
-            {
-                DataType = SupplierType.GTFS,
-                RetrievalType = RetrievalType.REST,
-                Name = "DeLijn",
-                Url = "C:\\Users\\maile\\Downloads\\de_lijn-gtfs.zip"
-            }
-            );
+            //_supplierConfigurations.Add(new SupplierConfiguration()
+            //{
+            //    DataType = SupplierType.GTFS,
+            //    RetrievalType = RetrievalType.REST,
+            //    Name = "NMBS",
+            //    Url = "C:\\Users\\maile\\Downloads\\NMBS.zip"
+            //});
+            //_supplierConfigurations.Add(new SupplierConfiguration()
+            //{
+            //    DataType = SupplierType.GTFS,
+            //    RetrievalType = RetrievalType.REST,
+            //    Name = "DeLijn",
+            //    Url = "C:\\Users\\maile\\Downloads\\de_lijn-gtfs.zip"
+            //}
+            //);
         }
 
         public void AddSuppliers()

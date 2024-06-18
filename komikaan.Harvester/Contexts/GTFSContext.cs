@@ -1,8 +1,5 @@
-﻿using System.Data;
-using System.Text.Json;
-using GTFS.Entities;
+﻿using GTFS.Entities;
 using Microsoft.EntityFrameworkCore;
-using NetTopologySuite.Index.HPRtree;
 using Route = GTFS.Entities.Route;
 
 namespace komikaan.Harvester.Contexts;
@@ -32,7 +29,7 @@ internal class GTFSContext : DbContext
         modelBuilder.Entity<Frequency>().HasKey(item =>
         new
         {
-            item.InternalId,
+
             item.DataOrigin,
             item.TripId,
             item.StartTime,
@@ -49,14 +46,14 @@ internal class GTFSContext : DbContext
         modelBuilder.Entity<Stop>().HasKey(item =>
         new
         {
-            item.InternalId,
+
             item.DataOrigin,
             item.Id
         });
         modelBuilder.Entity<Agency>().HasKey(item =>
         new
         {
-            item.InternalId,
+
             item.DataOrigin,
             item.Id
         });
@@ -64,7 +61,7 @@ internal class GTFSContext : DbContext
         modelBuilder.Entity<Calendar>().HasKey(item =>
         new
         {
-            item.InternalId,
+
             item.DataOrigin,
             item.ServiceId
         });
@@ -72,7 +69,7 @@ internal class GTFSContext : DbContext
         modelBuilder.Entity<Stop>().HasKey(item =>
         new
         {
-            item.InternalId,
+
             item.DataOrigin,
             item.Id
         });
@@ -80,7 +77,7 @@ internal class GTFSContext : DbContext
         modelBuilder.Entity<Pathway>().HasKey(item =>
         new
         {
-            item.InternalId,
+
             item.DataOrigin,
             item.Id
         });
@@ -88,7 +85,7 @@ internal class GTFSContext : DbContext
         modelBuilder.Entity<Route>().HasKey(item =>
         new
         {
-            item.InternalId,
+
             item.DataOrigin,
             item.Id
         });
@@ -96,7 +93,7 @@ internal class GTFSContext : DbContext
         modelBuilder.Entity<StopTime>().HasKey(item =>
         new
         {
-            item.InternalId,
+
             item.DataOrigin,
             item.TripId,
             item.StopId,
@@ -106,7 +103,7 @@ internal class GTFSContext : DbContext
         modelBuilder.Entity<Transfer>().HasKey(item =>
         new
         {
-            item.InternalId,
+
             item.DataOrigin,
             item.Id
         });
@@ -114,7 +111,7 @@ internal class GTFSContext : DbContext
         modelBuilder.Entity<CalendarDate>().HasKey(item =>
         new
         {
-            item.InternalId,
+
             item.DataOrigin,
             item.Date,
             item.ServiceId
@@ -123,7 +120,7 @@ internal class GTFSContext : DbContext
         modelBuilder.Entity<Trip>().HasKey(item =>
         new
         {
-            item.InternalId,
+
             item.DataOrigin,
             item.Id
         });
