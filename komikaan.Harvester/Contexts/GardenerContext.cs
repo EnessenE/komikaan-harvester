@@ -1,8 +1,6 @@
-﻿using Microsoft.AspNetCore.Connections;
-using System.Text;
+﻿using System.Text;
 using RabbitMQ.Client;
 using System.Text.Json;
-using System.Threading.Channels;
 
 namespace komikaan.Harvester.Contexts
 {
@@ -24,7 +22,6 @@ namespace komikaan.Harvester.Contexts
                                  exclusive: false,
                                  autoDelete: false,
                                  arguments: null);
-            _channel.QueueBind("gardeners", "stop-notifications", "gardener");
 
             return Task.CompletedTask;
         }

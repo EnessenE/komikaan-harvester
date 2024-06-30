@@ -38,6 +38,7 @@ namespace GTFS.Entities
     [Index(nameof(Id), nameof(DataOrigin))]
     [Index(nameof(RouteId))]
     [Index(nameof(ServiceId))]
+    [Index(nameof(ServiceId), nameof(DataOrigin))]
     [Index(nameof(ShapeId))]
     public class Trip : GTFSEntity
     {
