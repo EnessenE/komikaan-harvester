@@ -37,6 +37,9 @@ namespace GTFS.Entities
     [FileName("calendar_date")]
     [Table("calendar_dates")]
     [Index(nameof(ServiceId))]
+    [Index(nameof(Date))]
+    [Index(nameof(Date), nameof(DataOrigin))]
+    [Index(nameof(ServiceId), nameof(DataOrigin))]
     [Index(nameof(ServiceId), nameof(Date), nameof(DataOrigin))]
     public class CalendarDate : GTFSEntity, IComparable
     {

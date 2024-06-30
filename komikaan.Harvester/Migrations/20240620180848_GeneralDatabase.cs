@@ -1,7 +1,6 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using NetTopologySuite.Geometries;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -20,8 +19,8 @@ namespace komikaan.Harvester.Migrations
                 name: "agencies",
                 columns: table => new
                 {
-                    internal_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    id = table.Column<string>(type: "text", nullable: true),
+                    data_origin = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    id = table.Column<string>(type: "text", nullable: false),
                     name = table.Column<string>(type: "text", nullable: false),
                     url = table.Column<string>(type: "text", nullable: true),
                     timezone = table.Column<string>(type: "text", nullable: true),
@@ -29,33 +28,35 @@ namespace komikaan.Harvester.Migrations
                     phone = table.Column<string>(type: "text", nullable: true),
                     fare_url = table.Column<string>(type: "text", nullable: true),
                     email = table.Column<string>(type: "text", nullable: true),
-                    data_origin = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false)
+                    internal_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    last_updated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_agencies", x => x.internal_id);
+                    table.PrimaryKey("pk_agencies", x => new { x.data_origin, x.id });
                 });
 
             migrationBuilder.CreateTable(
                 name: "calendar_dates",
                 columns: table => new
                 {
-                    internal_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    data_origin = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     service_id = table.Column<string>(type: "text", nullable: false),
                     date = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     exception_type = table.Column<int>(type: "integer", nullable: false),
-                    data_origin = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false)
+                    internal_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    last_updated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_calendar_dates", x => x.internal_id);
+                    table.PrimaryKey("pk_calendar_dates", x => new { x.data_origin, x.date, x.service_id });
                 });
 
             migrationBuilder.CreateTable(
                 name: "calenders",
                 columns: table => new
                 {
-                    internal_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    data_origin = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     service_id = table.Column<string>(type: "text", nullable: false),
                     mask = table.Column<byte>(type: "smallint", nullable: false),
                     monday = table.Column<bool>(type: "boolean", nullable: false),
@@ -67,36 +68,38 @@ namespace komikaan.Harvester.Migrations
                     sunday = table.Column<bool>(type: "boolean", nullable: false),
                     start_date = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     end_date = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    data_origin = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false)
+                    internal_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    last_updated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_calenders", x => x.internal_id);
+                    table.PrimaryKey("pk_calenders", x => new { x.data_origin, x.service_id });
                 });
 
             migrationBuilder.CreateTable(
                 name: "frequencies",
                 columns: table => new
                 {
-                    internal_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    data_origin = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     trip_id = table.Column<string>(type: "text", nullable: false),
                     start_time = table.Column<string>(type: "text", nullable: false),
                     end_time = table.Column<string>(type: "text", nullable: false),
                     headway_secs = table.Column<string>(type: "text", nullable: false),
                     exact_times = table.Column<bool>(type: "boolean", nullable: true),
-                    data_origin = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false)
+                    internal_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    last_updated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_frequencies", x => x.internal_id);
+                    table.PrimaryKey("pk_frequencies", x => new { x.data_origin, x.trip_id, x.start_time, x.end_time });
                 });
 
             migrationBuilder.CreateTable(
                 name: "pathway",
                 columns: table => new
                 {
-                    internal_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    id = table.Column<string>(type: "text", nullable: true),
+                    data_origin = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    id = table.Column<string>(type: "text", nullable: false),
                     from_stop_id = table.Column<string>(type: "text", nullable: false),
                     to_stop_id = table.Column<string>(type: "text", nullable: false),
                     pathway_mode = table.Column<int>(type: "integer", nullable: false),
@@ -108,19 +111,20 @@ namespace komikaan.Harvester.Migrations
                     min_width = table.Column<double>(type: "double precision", nullable: true),
                     signposted_as = table.Column<string>(type: "text", nullable: false),
                     reversed_signposted_as = table.Column<string>(type: "text", nullable: false),
-                    data_origin = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false)
+                    internal_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    last_updated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_pathway", x => x.internal_id);
+                    table.PrimaryKey("pk_pathway", x => new { x.data_origin, x.id });
                 });
 
             migrationBuilder.CreateTable(
                 name: "routes",
                 columns: table => new
                 {
-                    internal_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    id = table.Column<string>(type: "text", nullable: true),
+                    data_origin = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    id = table.Column<string>(type: "text", nullable: false),
                     agency_id = table.Column<string>(type: "text", nullable: false),
                     short_name = table.Column<string>(type: "text", nullable: false),
                     long_name = table.Column<string>(type: "text", nullable: false),
@@ -129,60 +133,62 @@ namespace komikaan.Harvester.Migrations
                     url = table.Column<string>(type: "text", nullable: true),
                     color = table.Column<string>(type: "text", nullable: true),
                     text_color = table.Column<string>(type: "text", nullable: true),
-                    data_origin = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false)
+                    internal_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    last_updated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_routes", x => x.internal_id);
+                    table.PrimaryKey("pk_routes", x => new { x.data_origin, x.id });
                 });
 
             migrationBuilder.CreateTable(
                 name: "shapes",
                 columns: table => new
                 {
+                    internal_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    data_origin = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     id = table.Column<string>(type: "text", nullable: false),
-                    internal_id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    sequence = table.Column<long>(type: "bigint", nullable: false),
                     latitude = table.Column<double>(type: "double precision", nullable: false),
                     longitude = table.Column<double>(type: "double precision", nullable: false),
                     geo_location = table.Column<Point>(type: "geometry", nullable: false),
-                    sequence = table.Column<long>(type: "bigint", nullable: false),
                     distance_travelled = table.Column<double>(type: "double precision", nullable: true),
-                    data_origin = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false)
+                    last_updated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_shapes", x => x.id);
+                    table.PrimaryKey("pk_shapes", x => new { x.internal_id, x.data_origin, x.id, x.sequence });
                 });
 
             migrationBuilder.CreateTable(
                 name: "stop_times",
                 columns: table => new
                 {
-                    internal_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    data_origin = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     trip_id = table.Column<string>(type: "text", nullable: false),
-                    arrival_time = table.Column<TimeOnly>(type: "time without time zone", nullable: true),
-                    departure_time = table.Column<TimeOnly>(type: "time without time zone", nullable: true),
                     stop_id = table.Column<string>(type: "text", nullable: false),
                     stop_sequence = table.Column<long>(type: "bigint", nullable: false),
+                    arrival_time = table.Column<TimeOnly>(type: "time without time zone", nullable: true),
+                    departure_time = table.Column<TimeOnly>(type: "time without time zone", nullable: true),
                     stop_headsign = table.Column<string>(type: "text", nullable: true),
                     pickup_type = table.Column<int>(type: "integer", nullable: true),
                     drop_off_type = table.Column<int>(type: "integer", nullable: true),
                     shape_dist_travelled = table.Column<double>(type: "double precision", nullable: true),
                     timepoint_type = table.Column<int>(type: "integer", nullable: false),
-                    data_origin = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false)
+                    internal_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    last_updated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_stop_times", x => x.internal_id);
+                    table.PrimaryKey("pk_stop_times", x => new { x.data_origin, x.trip_id, x.stop_id, x.stop_sequence });
                 });
 
             migrationBuilder.CreateTable(
                 name: "stops",
                 columns: table => new
                 {
+                    data_origin = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     id = table.Column<string>(type: "text", nullable: false),
-                    internal_id = table.Column<string>(type: "text", nullable: false),
                     code = table.Column<string>(type: "text", nullable: true),
                     name = table.Column<string>(type: "text", nullable: false),
                     description = table.Column<string>(type: "text", nullable: true),
@@ -198,36 +204,38 @@ namespace komikaan.Harvester.Migrations
                     level_id = table.Column<string>(type: "text", nullable: true),
                     platform_code = table.Column<string>(type: "text", nullable: true),
                     stop_type = table.Column<int>(type: "integer", nullable: false),
-                    data_origin = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false)
+                    internal_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    last_updated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_stops", x => x.id);
+                    table.PrimaryKey("pk_stops", x => new { x.data_origin, x.id });
                 });
 
             migrationBuilder.CreateTable(
                 name: "transfers",
                 columns: table => new
                 {
-                    internal_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    id = table.Column<string>(type: "text", nullable: true),
+                    data_origin = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    id = table.Column<string>(type: "text", nullable: false),
                     from_stop_id = table.Column<string>(type: "text", nullable: false),
                     to_stop_id = table.Column<string>(type: "text", nullable: false),
                     transfer_type = table.Column<int>(type: "integer", nullable: false),
                     minimum_transfer_time = table.Column<string>(type: "text", nullable: false),
-                    data_origin = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false)
+                    internal_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    last_updated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_transfers", x => x.internal_id);
+                    table.PrimaryKey("pk_transfers", x => new { x.data_origin, x.id });
                 });
 
             migrationBuilder.CreateTable(
                 name: "trips",
                 columns: table => new
                 {
-                    internal_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    id = table.Column<string>(type: "text", nullable: true),
+                    data_origin = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    id = table.Column<string>(type: "text", nullable: false),
                     route_id = table.Column<string>(type: "text", nullable: false),
                     service_id = table.Column<string>(type: "text", nullable: false),
                     headsign = table.Column<string>(type: "text", nullable: true),
@@ -236,11 +244,12 @@ namespace komikaan.Harvester.Migrations
                     block_id = table.Column<string>(type: "text", nullable: true),
                     shape_id = table.Column<string>(type: "text", nullable: true),
                     accessibility_type = table.Column<int>(type: "integer", nullable: true),
-                    data_origin = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false)
+                    internal_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    last_updated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_trips", x => x.internal_id);
+                    table.PrimaryKey("pk_trips", x => new { x.data_origin, x.id });
                 });
 
             migrationBuilder.CreateIndex(
@@ -249,9 +258,29 @@ namespace komikaan.Harvester.Migrations
                 column: "data_origin");
 
             migrationBuilder.CreateIndex(
+                name: "ix_agencies_id",
+                table: "agencies",
+                column: "id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_agencies_id_data_origin",
+                table: "agencies",
+                columns: new[] { "id", "data_origin" });
+
+            migrationBuilder.CreateIndex(
                 name: "ix_agencies_id_name",
                 table: "agencies",
                 columns: new[] { "id", "name" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_agencies_internal_id",
+                table: "agencies",
+                column: "internal_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_agencies_internal_id_data_origin",
+                table: "agencies",
+                columns: new[] { "internal_id", "data_origin" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_calendar_dates_data_origin",
@@ -259,9 +288,24 @@ namespace komikaan.Harvester.Migrations
                 column: "data_origin");
 
             migrationBuilder.CreateIndex(
+                name: "ix_calendar_dates_internal_id",
+                table: "calendar_dates",
+                column: "internal_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_calendar_dates_internal_id_data_origin",
+                table: "calendar_dates",
+                columns: new[] { "internal_id", "data_origin" });
+
+            migrationBuilder.CreateIndex(
                 name: "ix_calendar_dates_service_id",
                 table: "calendar_dates",
                 column: "service_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_calendar_dates_service_id_date_data_origin",
+                table: "calendar_dates",
+                columns: new[] { "service_id", "date", "data_origin" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_calenders_data_origin",
@@ -269,9 +313,24 @@ namespace komikaan.Harvester.Migrations
                 column: "data_origin");
 
             migrationBuilder.CreateIndex(
+                name: "ix_calenders_internal_id",
+                table: "calenders",
+                column: "internal_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_calenders_internal_id_data_origin",
+                table: "calenders",
+                columns: new[] { "internal_id", "data_origin" });
+
+            migrationBuilder.CreateIndex(
                 name: "ix_calenders_service_id",
                 table: "calenders",
                 column: "service_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_calenders_service_id_data_origin",
+                table: "calenders",
+                columns: new[] { "service_id", "data_origin" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_frequencies_data_origin",
@@ -279,9 +338,34 @@ namespace komikaan.Harvester.Migrations
                 column: "data_origin");
 
             migrationBuilder.CreateIndex(
+                name: "ix_frequencies_internal_id",
+                table: "frequencies",
+                column: "internal_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_frequencies_internal_id_data_origin",
+                table: "frequencies",
+                columns: new[] { "internal_id", "data_origin" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_frequencies_trip_id_data_origin_start_time_end_time",
+                table: "frequencies",
+                columns: new[] { "trip_id", "data_origin", "start_time", "end_time" });
+
+            migrationBuilder.CreateIndex(
                 name: "ix_pathway_data_origin",
                 table: "pathway",
                 column: "data_origin");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_pathway_internal_id",
+                table: "pathway",
+                column: "internal_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_pathway_internal_id_data_origin",
+                table: "pathway",
+                columns: new[] { "internal_id", "data_origin" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_routes_agency_id",
@@ -292,6 +376,26 @@ namespace komikaan.Harvester.Migrations
                 name: "ix_routes_data_origin",
                 table: "routes",
                 column: "data_origin");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_routes_id",
+                table: "routes",
+                column: "id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_routes_id_data_origin",
+                table: "routes",
+                columns: new[] { "id", "data_origin" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_routes_internal_id",
+                table: "routes",
+                column: "internal_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_routes_internal_id_data_origin",
+                table: "routes",
+                columns: new[] { "internal_id", "data_origin" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_routes_long_name",
@@ -314,6 +418,21 @@ namespace komikaan.Harvester.Migrations
                 column: "id");
 
             migrationBuilder.CreateIndex(
+                name: "ix_shapes_id_data_origin_sequence",
+                table: "shapes",
+                columns: new[] { "id", "data_origin", "sequence" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_shapes_internal_id",
+                table: "shapes",
+                column: "internal_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_shapes_internal_id_data_origin",
+                table: "shapes",
+                columns: new[] { "internal_id", "data_origin" });
+
+            migrationBuilder.CreateIndex(
                 name: "ix_stop_times_arrival_time",
                 table: "stop_times",
                 column: "arrival_time");
@@ -334,6 +453,16 @@ namespace komikaan.Harvester.Migrations
                 column: "departure_time");
 
             migrationBuilder.CreateIndex(
+                name: "ix_stop_times_internal_id",
+                table: "stop_times",
+                column: "internal_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_stop_times_internal_id_data_origin",
+                table: "stop_times",
+                columns: new[] { "internal_id", "data_origin" });
+
+            migrationBuilder.CreateIndex(
                 name: "ix_stop_times_stop_id",
                 table: "stop_times",
                 column: "stop_id");
@@ -342,6 +471,11 @@ namespace komikaan.Harvester.Migrations
                 name: "ix_stop_times_trip_id",
                 table: "stop_times",
                 column: "trip_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_stop_times_trip_id_stop_id_data_origin_stop_sequence",
+                table: "stop_times",
+                columns: new[] { "trip_id", "stop_id", "data_origin", "stop_sequence" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_stops_data_origin",
@@ -354,6 +488,11 @@ namespace komikaan.Harvester.Migrations
                 column: "id");
 
             migrationBuilder.CreateIndex(
+                name: "ix_stops_id_data_origin",
+                table: "stops",
+                columns: new[] { "id", "data_origin" });
+
+            migrationBuilder.CreateIndex(
                 name: "ix_stops_id_parent_station",
                 table: "stops",
                 columns: new[] { "id", "parent_station" });
@@ -362,6 +501,11 @@ namespace komikaan.Harvester.Migrations
                 name: "ix_stops_internal_id",
                 table: "stops",
                 column: "internal_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_stops_internal_id_data_origin",
+                table: "stops",
+                columns: new[] { "internal_id", "data_origin" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_stops_name",
@@ -384,9 +528,39 @@ namespace komikaan.Harvester.Migrations
                 column: "data_origin");
 
             migrationBuilder.CreateIndex(
+                name: "ix_transfers_internal_id",
+                table: "transfers",
+                column: "internal_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_transfers_internal_id_data_origin",
+                table: "transfers",
+                columns: new[] { "internal_id", "data_origin" });
+
+            migrationBuilder.CreateIndex(
                 name: "ix_trips_data_origin",
                 table: "trips",
                 column: "data_origin");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_trips_id",
+                table: "trips",
+                column: "id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_trips_id_data_origin",
+                table: "trips",
+                columns: new[] { "id", "data_origin" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_trips_internal_id",
+                table: "trips",
+                column: "internal_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_trips_internal_id_data_origin",
+                table: "trips",
+                columns: new[] { "internal_id", "data_origin" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_trips_route_id",

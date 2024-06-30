@@ -38,6 +38,8 @@ namespace GTFS.Entities
     [Table("stops")]
     [Index(nameof(Id))]
     [Index(nameof(Id), nameof(DataOrigin))]
+    [Index(nameof(Id), nameof(StopType))]
+    [Index(nameof(InternalId), nameof(StopType))]
     [Index(nameof(Name))]
     [Index(nameof(ParentStation))]
     [Index(nameof(Name), nameof(ParentStation))]
