@@ -5,6 +5,7 @@ using JNogueira.Discord.Webhook.Client;
 using komikaan.Harvester.Contexts;
 using komikaan.Harvester.Interfaces;
 using komikaan.Harvester.Models;
+using komikaan.Harvester.Suppliers;
 using Microsoft.Extensions.Logging;
 
 namespace komikaan.Harvester.Managers
@@ -13,7 +14,7 @@ namespace komikaan.Harvester.Managers
     /// Responsible for directing the import flow
     /// Calls different Suppliers and gets their data and passes it on towards our preferred shared data point
     /// </summary>
-    public class HarvestingManager : BackgroundService
+    public class HarvestingManager : IHostedService
     {
         private readonly IEnumerable<ISupplier> _suppliers;
         private readonly IDataContext _dataContext;
@@ -30,10 +31,9 @@ namespace komikaan.Harvester.Managers
             _discordWebHookClient = discordWebhookClient;
         }
 
-        public override async Task StartAsync(CancellationToken cancellationToken)
+        public async Task StartAsync(CancellationToken cancellationToken)
         {
             await _gardenerContext.StartAsync(cancellationToken);
-            await base.StartAsync(cancellationToken);
         }
 
 
@@ -47,42 +47,38 @@ namespace komikaan.Harvester.Managers
 
         }
 
-        public async Task Harvesting()
+        public async Task Harvest(SupplierConfiguration config)
         {
-            foreach (var supplier in _suppliers)
+            try
             {
-                var config = supplier.GetConfiguration();
+                var supplier = new GenericGTFSSupplier(config, _discordWebHookClient);
+                var stopwatch = Stopwatch.StartNew();
+                _logger.LogInformation("Starting import from {supplier}", config.Name);
+                await SendMessageAsync(config, "Starting import");
+                var feed = await supplier.GetFeedAsync();
+                _logger.LogInformation("Finished retrieving data in {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
+                _logger.LogInformation("Adjusting feed started {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
+                await SendMessageAsync(config, "Adjusting feed");
+                await AdjustFeedAsync(feed);
+                await SendMessageAsync(config, "Finished adjusting feed");
+                _logger.LogInformation("Finished adjusting feed started {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
+                await SendMessageAsync(config, "Database import started!");
+                await _dataContext.ImportAsync(feed);
+                _logger.LogInformation("Finished importing data in {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
+                _logger.LogInformation("Notifying the gardeners for {name}", config.Name);
 
-                try
-                {
-                    var stopwatch = Stopwatch.StartNew();
-                    _logger.LogInformation("Starting import from {supplier}", config.Name);
-                    await SendMessageAsync(config, "Starting import");
-                    var feed = await supplier.GetFeedAsync();
-                    _logger.LogInformation("Finished retrieving data in {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
-                    _logger.LogInformation("Adjusting feed started {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
-                    await SendMessageAsync(config, "Adjusting feed");
-                    await AdjustFeedAsync(feed);
-                    await SendMessageAsync(config, "Finished adjusting feed");
-                    _logger.LogInformation("Finished adjusting feed started {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
-                    await SendMessageAsync(config, "Database import started!");
-                    await _dataContext.ImportAsync(feed);
-                    _logger.LogInformation("Finished importing data in {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
-                    _logger.LogInformation("Notifying the gardeners for {name}", config.Name);
-
-                    await SendMessageAsync(config, "Notifying gardeners");
-                    await NotifyAsync(feed);
-                    _logger.LogInformation("Notified the gardeners", config.Name);
-                    await SendMessageAsync(config, "Finished import");
-                }
-                catch (Exception error)
-                {
-                    await SendMessageAsync(config, "Import failed!");
-                    _logger.LogCritical("Failed import for {supplier}", config.Name);
-                    _logger.LogError(error, "Following error:");
-                }
-
+                await SendMessageAsync(config, "Notifying gardeners");
+                await NotifyAsync(feed);
+                _logger.LogInformation("Notified the gardeners", config.Name);
+                await SendMessageAsync(config, "Finished import");
             }
+            catch (Exception error)
+            {
+                await SendMessageAsync(config, "Import failed!");
+                _logger.LogCritical("Failed import for {supplier}", config.Name);
+                _logger.LogError(error, "Following error:");
+            }
+
         }
 
 
@@ -132,7 +128,7 @@ namespace komikaan.Harvester.Managers
                         // _logger.LogInformation("Got {x} routeTypes, {time}", routeTypes.Count, stopwatch.ElapsedMilliseconds);
                         var groupedTypes = routeTypes.GroupBy(x => DetectStopType(x))
                                  .ToDictionary(x => x.Key, y => y.Count());
-                       // _logger.LogInformation("Got {x} groupedTypes, {time}", groupedTypes.Count, stopwatch.ElapsedMilliseconds);
+                        // _logger.LogInformation("Got {x} groupedTypes, {time}", groupedTypes.Count, stopwatch.ElapsedMilliseconds);
 
                         if (groupedTypes.Count() == 1)
                         {
@@ -173,11 +169,6 @@ namespace komikaan.Harvester.Managers
 
             }
             return Task.CompletedTask;
-        }
-
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            await Harvesting();
         }
 
         public StopType DetectStopType(RouteTypeExtended routeType)
@@ -234,6 +225,11 @@ namespace komikaan.Harvester.Managers
                     _logger.LogInformation("Unknown type: {type}", routeType);
                     return StopType.Unknown;
             }
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
         }
     }
 }
