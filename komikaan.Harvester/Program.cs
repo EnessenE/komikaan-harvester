@@ -4,6 +4,7 @@ using komikaan.Harvester.Contexts;
 using komikaan.Harvester.Helpers;
 using komikaan.Harvester.Interfaces;
 using komikaan.Harvester.Managers;
+using komikaan.Harvester.Suppliers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Serilog;
@@ -39,13 +40,14 @@ namespace komikaan.Harvester
 
             AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
-            builder.Services.AddHostedService<HarvestingManager>();
-            builder.Services.AddSingleton(x => x.GetRequiredService<HarvestingManager>());
+            builder.Services.AddSingleton<HarvestingManager>();
+            builder.Services.AddHostedService(x => x.GetRequiredService<HarvestingManager>());
             var client = new DiscordWebhookClient("https://discord.com/api/webhooks/1249326974883725343/hMojhofrsjrsY9Sl0kvaffMh6RGDltMe5W6sDrunND3zppONAI8Y00HaEUcfy7QumsOJ");
             builder.Services.AddSingleton(client);
 
             builder.Services.AddSingleton<GardenerContext>();
-            builder.Services.AddSingleton<DetectorContext>();
+            builder.Services.AddSingleton<GenericGTFSSupplier>();
+            builder.Services.AddHostedService<DetectorContext>();
             builder.Services.AddSingleton<IDataContext, PostgresContext>();
             builder.Services.AddDbContext<GTFSContext>(options =>
             {

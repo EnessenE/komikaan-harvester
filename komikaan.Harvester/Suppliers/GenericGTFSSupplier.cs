@@ -2,49 +2,64 @@
 using GTFS.Entities;
 using JNogueira.Discord.Webhook.Client;
 using komikaan.Common.Models;
-using komikaan.Harvester.Interfaces;
+using RestSharp;
 using System.Collections.Concurrent;
-
+using System.Text;
+using RestSharp.Extensions;
 namespace komikaan.Harvester.Suppliers;
 
-public class GenericGTFSSupplier : ISupplier
+public class GenericGTFSSupplier
 {
     private readonly DiscordWebhookClient _discordWebHookClient;
-    private readonly SupplierConfiguration _supplierConfig;
+    private ILogger<GenericGTFSSupplier> _logger;
 
-    public GenericGTFSSupplier(SupplierConfiguration supplierConfig, DiscordWebhookClient discordWebhookClient)
+    public GenericGTFSSupplier(DiscordWebhookClient discordWebhookClient, ILogger<GenericGTFSSupplier> logger)
     {
         _discordWebHookClient = discordWebhookClient;
-        _supplierConfig = supplierConfig;
+        _logger = logger;
     }
 
-    public async Task<GTFSFeed> GetFeedAsync()
+    public async Task<GTFSFeed> RetrieveFeed(SupplierConfiguration supplierConfig)
     {
 
-        await SendMessageAsync("Started reading GTFS file");
-        var reader = new GTFSReader<GTFSFeed>(false, _supplierConfig.Name);
-        var feed = reader.Read(_supplierConfig.Url);
-        await SendMessageAsync("Finished reading GTFS file");
-        Console.WriteLine("Adjusting stops");
-        await SendMessageAsync("Starting data adjustment for trips");
+        await SendMessageAsync("Started reading GTFS file", supplierConfig);
+        var reader = new GTFSReader<GTFSFeed>(false, supplierConfig.Name);
+        var feed = await DownloadFeed(reader, supplierConfig);
+
+        await SendMessageAsync("Finished reading GTFS file", supplierConfig);
+        _logger.LogInformation("Adjusting stops");
+        await SendMessageAsync("Starting data adjustment for trips", supplierConfig);
 
         await ChunkMapTripsAsync(feed);
 
-        await SendMessageAsync("Started data adjustment stops");
+        await SendMessageAsync("Started data adjustment stops", supplierConfig);
         await ChunkMapStopsAsync(feed);
         foreach (var agency in feed.Agencies)
         {
-            Console.WriteLine("An agency found in this data supplier: {0}", agency.Name);
+            _logger.LogInformation("An agency found in this data supplier: {0}", agency.Name);
         }
-        Console.WriteLine($"Found a feed with {feed.Agencies.Count} agencies");
+        _logger.LogInformation($"Found a feed with {feed.Agencies.Count} agencies");
         return feed;
+    }
+
+    private async Task<GTFSFeed> DownloadFeed(GTFSReader<GTFSFeed> feed, SupplierConfiguration supplier)
+    {
+        var options = new RestClientOptions(supplier.Url);
+        var client = new RestClient(options);
+        var request = new RestRequest() { Method = Method.Get };
+        _logger.LogInformation("Request generated towards {url}", supplier.Url);
+        // The cancellation token comes from the caller. You can still make a call without it.
+        var response = await client.DownloadDataAsync(request);
+        File.WriteAllBytes(@"\app\gtfs_file.zip", response);
+
+        return feed.Read(@"\app\gtfs_file.zip");
     }
 
     private async Task ChunkMapStopsAsync(GTFSFeed feed)
     {
         var amountPerChunk = 5000;
         var chunks = feed.StopTimes.ToList().Chunk(amountPerChunk);
-        Console.WriteLine("Split into {0} chunks of {1}", chunks.Count(), amountPerChunk);
+        _logger.LogInformation("Split into {0} chunks of {1}", chunks.Count(), amountPerChunk);
         var tasks = new List<Task>();
         foreach (var chunk in chunks)
         {
@@ -64,7 +79,7 @@ public class GenericGTFSSupplier : ISupplier
     {
         var amountPerChunk = 5000;
         var chunks = feed.Trips.ToList().Chunk(amountPerChunk);
-        Console.WriteLine("Split into {0} chunks of {1}", chunks.Count(), amountPerChunk);
+        _logger.LogInformation("Split into {0} chunks of {1}", chunks.Count(), amountPerChunk);
         var tasks = new List<Task>();
         foreach (var chunk in chunks)
         {
@@ -121,14 +136,10 @@ public class GenericGTFSSupplier : ISupplier
         return Task.CompletedTask;
     }
 
-    public SupplierConfiguration GetConfiguration()
+    private async Task SendMessageAsync(string body, SupplierConfiguration supplier)
     {
-        return _supplierConfig;
-    }
-
-    private async Task SendMessageAsync(string body)
-    {
-        var message = new DiscordMessage(            "**Import progress for " + _supplierConfig.Name + "**\n" + body,
+        _logger.LogInformation(body);
+        var message = new DiscordMessage(            "**Import progress for " + supplier.Name + "**\n" + body,
             username: "Harvester",
             tts: false
         );
