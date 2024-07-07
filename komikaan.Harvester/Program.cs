@@ -1,4 +1,3 @@
-using System.Configuration;
 using System.Reflection;
 using JNogueira.Discord.Webhook.Client;
 using komikaan.Harvester.Contexts;

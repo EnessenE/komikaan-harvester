@@ -1,7 +1,6 @@
 ﻿using GTFS;
 using komikaan.Harvester.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Npgsql;
 
 namespace komikaan.Harvester.Contexts;

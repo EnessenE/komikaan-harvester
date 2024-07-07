@@ -1,8 +1,8 @@
 ﻿using GTFS;
 using GTFS.Entities;
 using JNogueira.Discord.Webhook.Client;
+using komikaan.Common.Models;
 using komikaan.Harvester.Interfaces;
-using komikaan.Harvester.Models;
 using System.Collections.Concurrent;
 
 namespace komikaan.Harvester.Suppliers;

@@ -1,5 +1,5 @@
 ﻿using GTFS;
-using komikaan.Harvester.Models;
+using komikaan.Common.Models;
 
 namespace komikaan.Harvester.Interfaces
 {

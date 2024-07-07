@@ -1,11 +1,10 @@
-﻿using Microsoft.AspNetCore.Connections;
-using System.Text;
+﻿using System.Text;
 using RabbitMQ.Client;
 using System.Text.Json;
 using RabbitMQ.Client.Events;
-using komikaan.Harvester.Models;
 using komikaan.Harvester.Managers;
 using JNogueira.Discord.Webhook.Client;
+using komikaan.Common.Models;
 
 namespace komikaan.Harvester.Contexts
 {
@@ -26,6 +25,7 @@ namespace komikaan.Harvester.Contexts
 
         public Task StartAsync(CancellationToken token)
         {
+            _logger.LogInformation("Connecting to detector queue");
             var factory = new ConnectionFactory { HostName = "localhost", };
             var connection = factory.CreateConnection();
             var channel = connection.CreateModel();
