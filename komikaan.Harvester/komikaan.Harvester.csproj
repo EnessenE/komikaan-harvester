@@ -14,6 +14,7 @@
   <ItemGroup>
     <PackageReference Include="discord-webhook-client" Version="3.1.0" />
     <PackageReference Include="EFCore.NamingConventions" Version="8.0.3" />
+    <PackageReference Include="komikaan.Common" Version="1.1.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.6" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="8.0.6" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.6">
@@ -32,9 +33,6 @@
     <PackageReference Include="Z.EntityFramework.Extensions.EFCore" Version="8.103.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\GTFS\GTFS.csproj" />
-  </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Migrations\" />

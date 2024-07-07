@@ -2,11 +2,10 @@
 using GTFS.Entities;
 using GTFS.Entities.Enumerations;
 using JNogueira.Discord.Webhook.Client;
+using komikaan.Common.Models;
 using komikaan.Harvester.Contexts;
 using komikaan.Harvester.Interfaces;
-using komikaan.Harvester.Models;
 using komikaan.Harvester.Suppliers;
-using Microsoft.Extensions.Logging;
 
 namespace komikaan.Harvester.Managers
 {
@@ -20,20 +19,23 @@ namespace komikaan.Harvester.Managers
         private readonly IDataContext _dataContext;
         private readonly ILogger<HarvestingManager> _logger;
         private readonly GardenerContext _gardenerContext;
+        private readonly DetectorContext _detectorContext;
         private readonly DiscordWebhookClient _discordWebHookClient;
 
-        public HarvestingManager(IEnumerable<ISupplier> suppliers, ILogger<HarvestingManager> logger, IDataContext dataContext, GardenerContext gardenerContext, DiscordWebhookClient discordWebhookClient)
+        public HarvestingManager(IEnumerable<ISupplier> suppliers, ILogger<HarvestingManager> logger, IDataContext dataContext, GardenerContext gardenerContext, DiscordWebhookClient discordWebhookClient, DetectorContext detectorContext)
         {
             _suppliers = suppliers;
             _logger = logger;
             _dataContext = dataContext;
             _gardenerContext = gardenerContext;
             _discordWebHookClient = discordWebhookClient;
+            _detectorContext = detectorContext;
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             await _gardenerContext.StartAsync(cancellationToken);
+            await _detectorContext.StartAsync(cancellationToken);
         }
 
 
@@ -70,6 +72,7 @@ namespace komikaan.Harvester.Managers
                 await SendMessageAsync(config, "Notifying gardeners");
                 await NotifyAsync(feed);
                 _logger.LogInformation("Notified the gardeners", config.Name);
+                await MarkAsFinished(config);
                 await SendMessageAsync(config, "Finished import");
             }
             catch (Exception error)
@@ -81,7 +84,12 @@ namespace komikaan.Harvester.Managers
 
         }
 
-
+        private Task MarkAsFinished(SupplierConfiguration config)
+        {
+            config.LastUpdated = DateTimeOffset.UtcNow;
+            config.DownloadPending = false;
+            return Task.CompletedTask;
+        }
 
         private async Task AdjustFeedAsync(GTFS.GTFSFeed feed)
         {
