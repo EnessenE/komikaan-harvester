@@ -15,27 +15,26 @@ namespace komikaan.Harvester.Managers
     /// </summary>
     public class HarvestingManager : IHostedService
     {
-        private readonly IEnumerable<ISupplier> _suppliers;
         private readonly IDataContext _dataContext;
         private readonly ILogger<HarvestingManager> _logger;
         private readonly GardenerContext _gardenerContext;
-        private readonly DetectorContext _detectorContext;
         private readonly DiscordWebhookClient _discordWebHookClient;
+        private readonly GenericGTFSSupplier _genericGTFSSupplier;
 
-        public HarvestingManager(IEnumerable<ISupplier> suppliers, ILogger<HarvestingManager> logger, IDataContext dataContext, GardenerContext gardenerContext, DiscordWebhookClient discordWebhookClient, DetectorContext detectorContext)
+        public HarvestingManager(ILogger<HarvestingManager> logger, IDataContext dataContext, GardenerContext gardenerContext, DiscordWebhookClient discordWebhookClient, GenericGTFSSupplier genericGTFSSupplier)
         {
-            _suppliers = suppliers;
             _logger = logger;
             _dataContext = dataContext;
             _gardenerContext = gardenerContext;
             _discordWebHookClient = discordWebhookClient;
-            _detectorContext = detectorContext;
+            _genericGTFSSupplier = genericGTFSSupplier;
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
+            _logger.LogInformation("Starting manager");
+
             await _gardenerContext.StartAsync(cancellationToken);
-            await _detectorContext.StartAsync(cancellationToken);
         }
 
 
@@ -51,13 +50,13 @@ namespace komikaan.Harvester.Managers
 
         public async Task Harvest(SupplierConfiguration config)
         {
+            Directory.CreateDirectory(@"/app/");
             try
             {
-                var supplier = new GenericGTFSSupplier(config, _discordWebHookClient);
                 var stopwatch = Stopwatch.StartNew();
                 _logger.LogInformation("Starting import from {supplier}", config.Name);
                 await SendMessageAsync(config, "Starting import");
-                var feed = await supplier.GetFeedAsync();
+                var feed = await _genericGTFSSupplier.RetrieveFeed(config);
                 _logger.LogInformation("Finished retrieving data in {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
                 _logger.LogInformation("Adjusting feed started {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
                 await SendMessageAsync(config, "Adjusting feed");
@@ -80,6 +79,10 @@ namespace komikaan.Harvester.Managers
                 await SendMessageAsync(config, "Import failed!");
                 _logger.LogCritical("Failed import for {supplier}", config.Name);
                 _logger.LogError(error, "Following error:");
+            }
+            finally
+            {
+                File.Delete("\\app\\gtfs_file.zip");
             }
 
         }

@@ -8,7 +8,7 @@ using komikaan.Common.Models;
 
 namespace komikaan.Harvester.Contexts
 {
-    public class DetectorContext
+    public class DetectorContext : IHostedService
     {
         private readonly ILogger<DetectorContext> _logger;
         private readonly HarvestingManager _harvestingManager;
@@ -28,39 +28,45 @@ namespace komikaan.Harvester.Contexts
             _logger.LogInformation("Connecting to detector queue");
             var factory = new ConnectionFactory { HostName = "localhost", };
             var connection = factory.CreateConnection();
-            var channel = connection.CreateModel();
-            channel.BasicQos(0, 1, false);
+            _channel = connection.CreateModel();
+            _channel.BasicQos(0, 1, false);
 
-            _channel.ExchangeDeclare("harvester-notifications", "direct", durable: true);
+            _channel.ExchangeDeclare("harvester-notifications", ExchangeType.Direct, durable: true);
             _channel.QueueDeclare(queue: "harvesters",
                                  durable: true,
                                  exclusive: false,
                                  autoDelete: false,
                                  arguments: null);
-            channel.QueueBind("harvesters", "harvester-notifications", "harvester");
+            _channel.QueueBind("harvesters", "harvester-notifications", "harvester");
 
-            var consumer = new EventingBasicConsumer(channel);
+            var consumer = new EventingBasicConsumer(_channel);
             consumer.Received += async (model, ea) =>
             {
+                _logger.LogInformation("Received a message!");
                 var body = ea.Body.ToArray();
                 var message = Encoding.UTF8.GetString(body);
                 var item = JsonSerializer.Deserialize<SupplierConfiguration>(message);
                 try
                 {
                     ProcessMessageAsync(item).GetAwaiter().GetResult();
-                    channel.BasicAck(ea.DeliveryTag, false);
+                    _channel.BasicAck(ea.DeliveryTag, false);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Unknown error");
-                    channel.BasicNack(ea.DeliveryTag, false, false);
+                    _channel.BasicNack(ea.DeliveryTag, false, false);
                     await SendMessageAsync(item, ex.Message);
                 }
             };
-            channel.BasicConsume(queue: "gardeners",
+            _channel.BasicConsume(queue: "harvesters",
                                  autoAck: false,
                                  consumer: consumer, consumerTag: "gardener");
             _logger.LogInformation("Started, waiting for a new import");
+            return Task.CompletedTask;
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
             return Task.CompletedTask;
         }
 
@@ -77,10 +83,18 @@ namespace komikaan.Harvester.Contexts
         private async Task SendMessageAsync(SupplierConfiguration config, string body)
         {
             var message = new DiscordMessage("**FAILED IMPORT, CRITICAL FAILURE, DROPPING " + config.Name + "**\n" + body,
-                username: "Harvester",
+                username: Environment.MachineName,
                 tts: false
             );
-            await _discordWebHookClient.SendToDiscord(message);
+            try
+            {
+                await _discordWebHookClient.SendToDiscord(message);
+            }
+            catch(Exception err)
+            {
+                _logger.LogError(err, "Failed to send a message about a failure");
+                await _discordWebHookClient.SendToDiscord(new DiscordMessage("Unknown failure", Environment.MachineName));
+            }
 
         }
     }

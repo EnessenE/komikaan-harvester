@@ -24,7 +24,7 @@ namespace komikaan.Harvester.Contexts
 
 
             _channel.ExchangeDeclare("stop-notifications", "direct", true);
-            _channel.QueueDeclare(queue: "gardeners",
+            _channel.QueueDeclare(queue: "gardeners", 
                                  durable: true,
                                  exclusive: false,
                                  autoDelete: false,
