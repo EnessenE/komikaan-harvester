@@ -41,7 +41,7 @@ namespace komikaan.Harvester.Managers
         private async Task SendMessageAsync(SupplierConfiguration config, string body)
         {
             var message = new DiscordMessage("**Import progress for " + config.Name + "**\n" + body,
-                username: "Harvester",
+                username: Environment.MachineName,
                 tts: false
             );
             await _discordWebHookClient.SendToDiscord(message);

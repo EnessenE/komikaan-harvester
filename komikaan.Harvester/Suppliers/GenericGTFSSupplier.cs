@@ -140,7 +140,7 @@ public class GenericGTFSSupplier
     {
         _logger.LogInformation(body);
         var message = new DiscordMessage(            "**Import progress for " + supplier.Name + "**\n" + body,
-            username: "Harvester",
+            username: Environment.MachineName,
             tts: false
         );
         await _discordWebHookClient.SendToDiscord(message);
