@@ -14,19 +14,25 @@ namespace komikaan.Harvester.Contexts
         private readonly HarvestingManager _harvestingManager;
         private readonly DiscordWebhookClient _discordWebHookClient;
         private IModel _channel;
+        private readonly IConfiguration _configuration;
 
-        public DetectorContext(ILogger<DetectorContext> logger, HarvestingManager harvestingManager, DiscordWebhookClient discordWebHookClient)
+        public DetectorContext(ILogger<DetectorContext> logger, HarvestingManager harvestingManager, DiscordWebhookClient discordWebHookClient, IConfiguration configuration)
         {
             _logger = logger;
             _harvestingManager = harvestingManager;
             _discordWebHookClient = discordWebHookClient;
+            _configuration = configuration;
         }
 
 
         public Task StartAsync(CancellationToken token)
         {
             _logger.LogInformation("Connecting to detector queue");
-            var factory = new ConnectionFactory { HostName = "localhost", };
+            var factory = new ConnectionFactory();
+
+            factory.HostName = _configuration.GetValue<string>("RabbitMQHost")!;
+            factory.UserName = _configuration.GetValue<string>("RabbitMQUsername")!;
+            factory.Password = _configuration.GetValue<string>("RabbitMQPassword")!;
             var connection = factory.CreateConnection();
             _channel = connection.CreateModel();
             _channel.BasicQos(0, 1, false);

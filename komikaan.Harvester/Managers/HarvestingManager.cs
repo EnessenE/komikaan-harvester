@@ -70,7 +70,7 @@ namespace komikaan.Harvester.Managers
 
                 await SendMessageAsync(config, "Notifying gardeners");
                 await NotifyAsync(feed);
-                _logger.LogInformation("Notified the gardeners", config.Name);
+                _logger.LogInformation("Notified the gardeners for {name}", config.Name);
                 await MarkAsFinished(config);
                 await SendMessageAsync(config, "Finished import");
             }
@@ -87,11 +87,11 @@ namespace komikaan.Harvester.Managers
 
         }
 
-        private Task MarkAsFinished(SupplierConfiguration config)
+        private async Task MarkAsFinished(SupplierConfiguration config)
         {
             config.LastUpdated = DateTimeOffset.UtcNow;
             config.DownloadPending = false;
-            return Task.CompletedTask;
+            await _dataContext.MarkDownload(config);
         }
 
         private async Task AdjustFeedAsync(GTFS.GTFSFeed feed)
