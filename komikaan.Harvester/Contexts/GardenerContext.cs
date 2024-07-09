@@ -8,17 +8,23 @@ namespace komikaan.Harvester.Contexts
     {
         private IModel _channel;
         private ILogger<GardenerContext> _logger;
+        private readonly IConfiguration _configuration;
 
-        public GardenerContext(ILogger<GardenerContext> logger)
+        public GardenerContext(ILogger<GardenerContext> logger, IConfiguration configuration)
         {
             _logger = logger;
+            _configuration = configuration;
         }
 
         public Task StartAsync(CancellationToken token)
         {
 
             _logger.LogInformation("Connecting to gardener queue");
-            var factory = new ConnectionFactory { HostName = "localhost" };
+            var factory = new ConnectionFactory();
+
+            factory.HostName = _configuration.GetValue<string>("RabbitMQHost")!;
+            factory.UserName = _configuration.GetValue<string>("RabbitMQUsername")!;
+            factory.Password = _configuration.GetValue<string>("RabbitMQPassword")!;
             var connection = factory.CreateConnection();
             _channel = connection.CreateModel();
 
