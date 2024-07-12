@@ -66,7 +66,7 @@ namespace komikaan.Harvester.Contexts
             };
             _channel.BasicConsume(queue: "harvesters",
                                  autoAck: false,
-                                 consumer: consumer, consumerTag: "gardener");
+                                 consumer: consumer, consumerTag: "harvester");
             _logger.LogInformation("Started, waiting for a new import");
             return Task.CompletedTask;
         }
