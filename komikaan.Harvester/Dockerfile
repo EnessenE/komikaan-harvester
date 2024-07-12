@@ -1,23 +1,20 @@
-#See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
+#See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-USER app
 WORKDIR /app
-EXPOSE 8080
-EXPOSE 8081
+EXPOSE 80
+EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["komikaan.Harvester.csproj", "."]
-RUN dotnet restore "./././komikaan.Harvester.csproj"
+COPY ["komikaan.Harvester/komikaan.Harvester.csproj", "komikaan.Harvester/"]
+RUN dotnet restore "komikaan.Harvester/komikaan.Harvester.csproj"
 COPY . .
-WORKDIR "/src/."
-RUN dotnet build "./komikaan.Harvester.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR "/src/komikaan.Harvester"
+RUN dotnet build "komikaan.Harvester.csproj" -c Release -o /app/build
 
 FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./komikaan.Harvester.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "komikaan.Harvester.csproj" -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app
