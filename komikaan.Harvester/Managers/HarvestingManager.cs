@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using GTFS.Entities;
 using GTFS.Entities.Enumerations;
 using JNogueira.Discord.Webhook.Client;
@@ -116,6 +117,7 @@ namespace komikaan.Harvester.Managers
         private async Task DetectStopsType(GTFS.GTFSFeed feed, IEnumerable<Stop> stops)
         {
             var iteration = 0;
+            int totalUnknown = 0;
             foreach (var stop in stops)
             {
                 iteration = iteration + 1;
@@ -157,15 +159,17 @@ namespace komikaan.Harvester.Managers
                     }
                     else
                     {
-                        _logger.LogInformation("Forced {name} to unknown", stop.Name);
+                        _logger.LogDebug("Forced {name} to unknown", stop.Name);
+                        Interlocked.Increment(ref totalUnknown);
                         stop.StopType = StopType.Unknown;
                     }
                 }
                 catch (Exception ex)
                 {
+                    _logger.LogDebug("Forced {name} to unknown", stop.Name);
                     _logger.LogError(ex, "broken");
 
-                    _logger.LogInformation("Error Forced {name} to unknown", stop.Name);
+                    Interlocked.Increment(ref totalUnknown);
                     stop.StopType = StopType.Unknown;
                 }
             }
