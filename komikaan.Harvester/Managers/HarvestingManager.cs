@@ -114,7 +114,7 @@ namespace komikaan.Harvester.Managers
             await Task.CompletedTask;
         }
 
-        private async Task DetectStopsType(GTFS.GTFSFeed feed, IEnumerable<Stop> stops)
+        private async Task<int> DetectStopsType(GTFS.GTFSFeed feed, IEnumerable<Stop> stops)
         {
             var iteration = 0;
             int totalUnknown = 0;
