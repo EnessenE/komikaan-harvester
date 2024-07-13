@@ -101,16 +101,19 @@ namespace komikaan.Harvester.Managers
             var chunks = feed.Stops.ToList().Chunk((int)amountPerChunk);
             _logger.LogInformation("Split into {c} chunks of {amountPerChunk}", chunks.Count(), amountPerChunk);
             var tasks = new List<Task>();
+            var totalUnknown = 0;
             foreach (var stops in chunks)
             {
                 var task = new Task(async () =>
                 {
-                    await DetectStopsType(feed, stops);
+                    var data = await DetectStopsType(feed, stops);
+                    Interlocked.Increment(ref totalUnknown);
                 });
                 task.Start();
                 tasks.Add(task);
             }
             Task.WaitAll(tasks.ToArray());
+            _logger.LogInformation("Total unknown stops: {total}", totalUnknown);
             await Task.CompletedTask;
         }
 
@@ -173,7 +176,7 @@ namespace komikaan.Harvester.Managers
                     stop.StopType = StopType.Unknown;
                 }
             }
-            await Task.CompletedTask;
+            return totalUnknown;
         }
 
         private Task NotifyAsync(GTFS.GTFSFeed feed)
