@@ -54,8 +54,8 @@ namespace komikaan.Harvester.Contexts
                 var item = JsonSerializer.Deserialize<SupplierConfiguration>(message);
                 try
                 {
-                    ProcessMessageAsync(item).GetAwaiter().GetResult();
                     _channel.BasicAck(ea.DeliveryTag, false);
+                    ProcessMessageAsync(item).GetAwaiter().GetResult();
                 }
                 catch (Exception ex)
                 {
