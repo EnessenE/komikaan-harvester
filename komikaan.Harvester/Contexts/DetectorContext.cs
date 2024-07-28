@@ -60,7 +60,6 @@ namespace komikaan.Harvester.Contexts
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Unknown error");
-                    _channel.BasicNack(ea.DeliveryTag, false, false);
                     await SendMessageAsync(item, ex.Message);
                 }
             };
