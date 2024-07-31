@@ -33,6 +33,7 @@ namespace komikaan.Harvester.Contexts
             factory.HostName = _configuration.GetValue<string>("RabbitMQHost")!;
             factory.UserName = _configuration.GetValue<string>("RabbitMQUsername")!;
             factory.Password = _configuration.GetValue<string>("RabbitMQPassword")!;
+            factory.RequestedConnectionTimeout = TimeSpan.FromHours(3);
             var connection = factory.CreateConnection();
             _channel = connection.CreateModel();
             _channel.BasicQos(0, 1, false);
