@@ -69,9 +69,11 @@ namespace komikaan.Harvester.Managers
                 _logger.LogInformation("Finished importing data in {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
                 _logger.LogInformation("Notifying the gardeners for {name}", config.Name);
 
-                await SendMessageAsync(config, "Notifying gardeners");
+                await SendMessageAsync(config, "Finished, notifying gardeners");
                 await NotifyAsync(feed);
                 _logger.LogInformation("Notified the gardeners for {name}", config.Name);
+                await SendMessageAsync(config, "Notified gardeners, starting to delete old data");
+                await _dataContext.DeleteOldDataAsync(config);
                 await MarkAsFinished(config);
                 await SendMessageAsync(config, "Finished import");
             }
