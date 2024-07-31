@@ -41,6 +41,7 @@ internal class PostgresContext : IDataContext
 
     public async Task DeleteOldDataAsync(SupplierConfiguration config)
     {
+        await _gtfsContext.Agencies.BulkDeleteAsync(_gtfsContext.Agencies.Where(item => item.DataOrigin == config.Name && item.ImportId == config.ImportId));
         await _gtfsContext.Routes.BulkDeleteAsync(_gtfsContext.Routes.Where(item => item.DataOrigin == config.Name && item.ImportId == config.ImportId));
         await _gtfsContext.Trips.BulkDeleteAsync(_gtfsContext.Trips.Where(item => item.DataOrigin == config.Name && item.ImportId == config.ImportId));
         await _gtfsContext.Stops.BulkDeleteAsync(_gtfsContext.Stops.Where(item => item.DataOrigin == config.Name && item.ImportId == config.ImportId));
