@@ -21,6 +21,7 @@ internal class GTFSContext : DbContext
     public GTFSContext(DbContextOptions<GTFSContext> options)
         : base(options)
     {
+        Database.SetCommandTimeout(TimeSpan.FromMinutes(15));
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -130,5 +131,7 @@ internal class GTFSContext : DbContext
 
 
     protected void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.UseNpgsql("Host=my_host;Database=my_db;Username=my_user;Password=my_pw");
+    {
+        optionsBuilder.UseNpgsql("Host=my_host;Database=my_db;Username=my_user;Password=my_pw");
+    }
 }

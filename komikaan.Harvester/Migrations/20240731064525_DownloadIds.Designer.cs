@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -12,9 +13,11 @@ using komikaan.Harvester.Contexts;
 namespace komikaan.Harvester.Migrations
 {
     [DbContext(typeof(GTFSContext))]
-    partial class GTFSContextModelSnapshot : ModelSnapshot
+    [Migration("20240731064525_DownloadIds")]
+    partial class DownloadIds
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -43,7 +46,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("text")
                         .HasColumnName("fare_url");
 
-                    b.Property<Guid?>("ImportId")
+                    b.Property<Guid>("ImportId")
                         .HasColumnType("uuid")
                         .HasColumnName("import_id");
 
@@ -84,6 +87,9 @@ namespace komikaan.Harvester.Migrations
                     b.HasIndex("Id")
                         .HasDatabaseName("ix_agencies_id");
 
+                    b.HasIndex("ImportId")
+                        .HasDatabaseName("ix_agencies_import_id");
+
                     b.HasIndex("InternalId")
                         .HasDatabaseName("ix_agencies_internal_id");
 
@@ -92,9 +98,6 @@ namespace komikaan.Harvester.Migrations
 
                     b.HasIndex("Id", "Name")
                         .HasDatabaseName("ix_agencies_id_name");
-
-                    b.HasIndex("ImportId", "DataOrigin")
-                        .HasDatabaseName("ix_agencies_import_id_data_origin");
 
                     b.HasIndex("InternalId", "DataOrigin")
                         .HasDatabaseName("ix_agencies_internal_id_data_origin");
@@ -121,7 +124,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("friday");
 
-                    b.Property<Guid?>("ImportId")
+                    b.Property<Guid>("ImportId")
                         .HasColumnType("uuid")
                         .HasColumnName("import_id");
 
@@ -171,14 +174,14 @@ namespace komikaan.Harvester.Migrations
                     b.HasIndex("DataOrigin")
                         .HasDatabaseName("ix_calenders_data_origin");
 
+                    b.HasIndex("ImportId")
+                        .HasDatabaseName("ix_calenders_import_id");
+
                     b.HasIndex("InternalId")
                         .HasDatabaseName("ix_calenders_internal_id");
 
                     b.HasIndex("ServiceId")
                         .HasDatabaseName("ix_calenders_service_id");
-
-                    b.HasIndex("ImportId", "DataOrigin")
-                        .HasDatabaseName("ix_calenders_import_id_data_origin");
 
                     b.HasIndex("InternalId", "DataOrigin")
                         .HasDatabaseName("ix_calenders_internal_id_data_origin");
@@ -208,7 +211,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("exception_type");
 
-                    b.Property<Guid?>("ImportId")
+                    b.Property<Guid>("ImportId")
                         .HasColumnType("uuid")
                         .HasColumnName("import_id");
 
@@ -229,6 +232,9 @@ namespace komikaan.Harvester.Migrations
                     b.HasIndex("Date")
                         .HasDatabaseName("ix_calendar_dates_date");
 
+                    b.HasIndex("ImportId")
+                        .HasDatabaseName("ix_calendar_dates_import_id");
+
                     b.HasIndex("InternalId")
                         .HasDatabaseName("ix_calendar_dates_internal_id");
 
@@ -237,9 +243,6 @@ namespace komikaan.Harvester.Migrations
 
                     b.HasIndex("Date", "DataOrigin")
                         .HasDatabaseName("ix_calendar_dates_date_data_origin");
-
-                    b.HasIndex("ImportId", "DataOrigin")
-                        .HasDatabaseName("ix_calendar_dates_import_id_data_origin");
 
                     b.HasIndex("InternalId", "DataOrigin")
                         .HasDatabaseName("ix_calendar_dates_internal_id_data_origin");
@@ -280,7 +283,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("text")
                         .HasColumnName("headway_secs");
 
-                    b.Property<Guid?>("ImportId")
+                    b.Property<Guid>("ImportId")
                         .HasColumnType("uuid")
                         .HasColumnName("import_id");
 
@@ -298,11 +301,11 @@ namespace komikaan.Harvester.Migrations
                     b.HasIndex("DataOrigin")
                         .HasDatabaseName("ix_frequencies_data_origin");
 
+                    b.HasIndex("ImportId")
+                        .HasDatabaseName("ix_frequencies_import_id");
+
                     b.HasIndex("InternalId")
                         .HasDatabaseName("ix_frequencies_internal_id");
-
-                    b.HasIndex("ImportId", "DataOrigin")
-                        .HasDatabaseName("ix_frequencies_import_id_data_origin");
 
                     b.HasIndex("InternalId", "DataOrigin")
                         .HasDatabaseName("ix_frequencies_internal_id_data_origin");
@@ -328,7 +331,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("text")
                         .HasColumnName("from_stop_id");
 
-                    b.Property<Guid?>("ImportId")
+                    b.Property<Guid>("ImportId")
                         .HasColumnType("uuid")
                         .HasColumnName("import_id");
 
@@ -386,11 +389,11 @@ namespace komikaan.Harvester.Migrations
                     b.HasIndex("DataOrigin")
                         .HasDatabaseName("ix_pathway_data_origin");
 
+                    b.HasIndex("ImportId")
+                        .HasDatabaseName("ix_pathway_import_id");
+
                     b.HasIndex("InternalId")
                         .HasDatabaseName("ix_pathway_internal_id");
-
-                    b.HasIndex("ImportId", "DataOrigin")
-                        .HasDatabaseName("ix_pathway_import_id_data_origin");
 
                     b.HasIndex("InternalId", "DataOrigin")
                         .HasDatabaseName("ix_pathway_internal_id_data_origin");
@@ -421,7 +424,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("text")
                         .HasColumnName("description");
 
-                    b.Property<Guid?>("ImportId")
+                    b.Property<Guid>("ImportId")
                         .HasColumnType("uuid")
                         .HasColumnName("import_id");
 
@@ -465,6 +468,9 @@ namespace komikaan.Harvester.Migrations
                     b.HasIndex("Id")
                         .HasDatabaseName("ix_routes_id");
 
+                    b.HasIndex("ImportId")
+                        .HasDatabaseName("ix_routes_import_id");
+
                     b.HasIndex("InternalId")
                         .HasDatabaseName("ix_routes_internal_id");
 
@@ -476,9 +482,6 @@ namespace komikaan.Harvester.Migrations
 
                     b.HasIndex("Id", "DataOrigin")
                         .HasDatabaseName("ix_routes_id_data_origin");
-
-                    b.HasIndex("ImportId", "DataOrigin")
-                        .HasDatabaseName("ix_routes_import_id_data_origin");
 
                     b.HasIndex("InternalId", "DataOrigin")
                         .HasDatabaseName("ix_routes_internal_id_data_origin");
@@ -513,7 +516,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("geometry")
                         .HasColumnName("geo_location");
 
-                    b.Property<Guid?>("ImportId")
+                    b.Property<Guid>("ImportId")
                         .HasColumnType("uuid")
                         .HasColumnName("import_id");
 
@@ -538,11 +541,11 @@ namespace komikaan.Harvester.Migrations
                     b.HasIndex("Id")
                         .HasDatabaseName("ix_shapes_id");
 
+                    b.HasIndex("ImportId")
+                        .HasDatabaseName("ix_shapes_import_id");
+
                     b.HasIndex("InternalId")
                         .HasDatabaseName("ix_shapes_internal_id");
-
-                    b.HasIndex("ImportId", "DataOrigin")
-                        .HasDatabaseName("ix_shapes_import_id_data_origin");
 
                     b.HasIndex("InternalId", "DataOrigin")
                         .HasDatabaseName("ix_shapes_internal_id_data_origin");
@@ -576,7 +579,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("geometry")
                         .HasColumnName("geo_location");
 
-                    b.Property<Guid?>("ImportId")
+                    b.Property<Guid>("ImportId")
                         .HasColumnType("uuid")
                         .HasColumnName("import_id");
 
@@ -645,6 +648,9 @@ namespace komikaan.Harvester.Migrations
                     b.HasIndex("Id")
                         .HasDatabaseName("ix_stops_id");
 
+                    b.HasIndex("ImportId")
+                        .HasDatabaseName("ix_stops_import_id");
+
                     b.HasIndex("InternalId")
                         .HasDatabaseName("ix_stops_internal_id");
 
@@ -662,9 +668,6 @@ namespace komikaan.Harvester.Migrations
 
                     b.HasIndex("Id", "StopType")
                         .HasDatabaseName("ix_stops_id_stop_type");
-
-                    b.HasIndex("ImportId", "DataOrigin")
-                        .HasDatabaseName("ix_stops_import_id_data_origin");
 
                     b.HasIndex("InternalId", "DataOrigin")
                         .HasDatabaseName("ix_stops_internal_id_data_origin");
@@ -709,7 +712,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("drop_off_type");
 
-                    b.Property<Guid?>("ImportId")
+                    b.Property<Guid>("ImportId")
                         .HasColumnType("uuid")
                         .HasColumnName("import_id");
 
@@ -749,6 +752,9 @@ namespace komikaan.Harvester.Migrations
                     b.HasIndex("DepartureTime")
                         .HasDatabaseName("ix_stop_times_departure_time");
 
+                    b.HasIndex("ImportId")
+                        .HasDatabaseName("ix_stop_times_import_id");
+
                     b.HasIndex("InternalId")
                         .HasDatabaseName("ix_stop_times_internal_id");
 
@@ -760,9 +766,6 @@ namespace komikaan.Harvester.Migrations
 
                     b.HasIndex("ArrivalTime", "DepartureTime")
                         .HasDatabaseName("ix_stop_times_arrival_time_departure_time");
-
-                    b.HasIndex("ImportId", "DataOrigin")
-                        .HasDatabaseName("ix_stop_times_import_id_data_origin");
 
                     b.HasIndex("InternalId", "DataOrigin")
                         .HasDatabaseName("ix_stop_times_internal_id_data_origin");
@@ -797,7 +800,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("text")
                         .HasColumnName("from_stop_id");
 
-                    b.Property<Guid?>("ImportId")
+                    b.Property<Guid>("ImportId")
                         .HasColumnType("uuid")
                         .HasColumnName("import_id");
 
@@ -827,11 +830,11 @@ namespace komikaan.Harvester.Migrations
                     b.HasIndex("DataOrigin")
                         .HasDatabaseName("ix_transfers_data_origin");
 
+                    b.HasIndex("ImportId")
+                        .HasDatabaseName("ix_transfers_import_id");
+
                     b.HasIndex("InternalId")
                         .HasDatabaseName("ix_transfers_internal_id");
-
-                    b.HasIndex("ImportId", "DataOrigin")
-                        .HasDatabaseName("ix_transfers_import_id_data_origin");
 
                     b.HasIndex("InternalId", "DataOrigin")
                         .HasDatabaseName("ix_transfers_internal_id_data_origin");
@@ -866,7 +869,7 @@ namespace komikaan.Harvester.Migrations
                         .HasColumnType("text")
                         .HasColumnName("headsign");
 
-                    b.Property<Guid?>("ImportId")
+                    b.Property<Guid>("ImportId")
                         .HasColumnType("uuid")
                         .HasColumnName("import_id");
 
@@ -903,6 +906,9 @@ namespace komikaan.Harvester.Migrations
                     b.HasIndex("Id")
                         .HasDatabaseName("ix_trips_id");
 
+                    b.HasIndex("ImportId")
+                        .HasDatabaseName("ix_trips_import_id");
+
                     b.HasIndex("InternalId")
                         .HasDatabaseName("ix_trips_internal_id");
 
@@ -917,9 +923,6 @@ namespace komikaan.Harvester.Migrations
 
                     b.HasIndex("Id", "DataOrigin")
                         .HasDatabaseName("ix_trips_id_data_origin");
-
-                    b.HasIndex("ImportId", "DataOrigin")
-                        .HasDatabaseName("ix_trips_import_id_data_origin");
 
                     b.HasIndex("InternalId", "DataOrigin")
                         .HasDatabaseName("ix_trips_internal_id_data_origin");

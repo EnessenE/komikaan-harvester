@@ -3,9 +3,7 @@ using GTFS;
 using komikaan.Common.Models;
 using komikaan.Harvester.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using NetTopologySuite.Index.HPRtree;
 using Npgsql;
-using System.Configuration;
 using System.Data;
 
 namespace komikaan.Harvester.Contexts;
@@ -20,7 +18,7 @@ internal class PostgresContext : IDataContext
     public PostgresContext(ILogger<PostgresContext> logger, GTFSContext gtfsContext, IConfiguration configuration)
     {
         _logger = logger;
-        _gtfsContext = gtfsContext; 
+        _gtfsContext = gtfsContext;
         _connectionString = configuration.GetConnectionString("HarvestingTarget") ?? throw new InvalidOperationException("A GTFS postgres database connection should be defined!");
 
     }
@@ -41,8 +39,21 @@ internal class PostgresContext : IDataContext
          );
     }
 
+    public async Task DeleteOldDataAsync(SupplierConfiguration config)
+    {
+        await _gtfsContext.Routes.BulkDeleteAsync(_gtfsContext.Routes.Where(item => item.DataOrigin.Equals(config.Name, StringComparison.InvariantCultureIgnoreCase) && item.ImportId == config.ImportId));
+        await _gtfsContext.Trips.BulkDeleteAsync(_gtfsContext.Trips.Where(item => item.DataOrigin.Equals(config.Name, StringComparison.InvariantCultureIgnoreCase) && item.ImportId == config.ImportId));
+        await _gtfsContext.Stops.BulkDeleteAsync(_gtfsContext.Stops.Where(item => item.DataOrigin.Equals(config.Name, StringComparison.InvariantCultureIgnoreCase) && item.ImportId == config.ImportId));
+        await _gtfsContext.Calendars.BulkDeleteAsync(_gtfsContext.Calendars.Where(item => item.DataOrigin.Equals(config.Name, StringComparison.InvariantCultureIgnoreCase) && item.ImportId == config.ImportId));
+        await _gtfsContext.CalendarDates.BulkDeleteAsync(_gtfsContext.CalendarDates.Where(item => item.DataOrigin.Equals(config.Name, StringComparison.InvariantCultureIgnoreCase) && item.ImportId == config.ImportId));
+        await _gtfsContext.Frequencies.BulkDeleteAsync(_gtfsContext.Frequencies.Where(item => item.DataOrigin.Equals(config.Name, StringComparison.InvariantCultureIgnoreCase) && item.ImportId == config.ImportId));
+        await _gtfsContext.StopTimes.BulkDeleteAsync(_gtfsContext.StopTimes.Where(item => item.DataOrigin.Equals(config.Name, StringComparison.InvariantCultureIgnoreCase) && item.ImportId == config.ImportId));
+        await _gtfsContext.Shapes.BulkDeleteAsync(_gtfsContext.Shapes.Where(item => item.DataOrigin.Equals(config.Name, StringComparison.InvariantCultureIgnoreCase) && item.ImportId == config.ImportId));
+    }
+
     public async Task ImportAsync(GTFSFeed feed)
     {
+
         _gtfsContext.Agencies.BulkMerge(feed.Agencies, operation =>
         {
             operation.InsertIfNotExists = true;
