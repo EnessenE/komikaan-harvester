@@ -41,14 +41,14 @@ internal class PostgresContext : IDataContext
 
     public async Task DeleteOldDataAsync(SupplierConfiguration config)
     {
-        await _gtfsContext.Routes.BulkDeleteAsync(_gtfsContext.Routes.Where(item => item.DataOrigin.Equals(config.Name, StringComparison.InvariantCultureIgnoreCase) && item.ImportId == config.ImportId));
-        await _gtfsContext.Trips.BulkDeleteAsync(_gtfsContext.Trips.Where(item => item.DataOrigin.Equals(config.Name, StringComparison.InvariantCultureIgnoreCase) && item.ImportId == config.ImportId));
-        await _gtfsContext.Stops.BulkDeleteAsync(_gtfsContext.Stops.Where(item => item.DataOrigin.Equals(config.Name, StringComparison.InvariantCultureIgnoreCase) && item.ImportId == config.ImportId));
-        await _gtfsContext.Calendars.BulkDeleteAsync(_gtfsContext.Calendars.Where(item => item.DataOrigin.Equals(config.Name, StringComparison.InvariantCultureIgnoreCase) && item.ImportId == config.ImportId));
-        await _gtfsContext.CalendarDates.BulkDeleteAsync(_gtfsContext.CalendarDates.Where(item => item.DataOrigin.Equals(config.Name, StringComparison.InvariantCultureIgnoreCase) && item.ImportId == config.ImportId));
-        await _gtfsContext.Frequencies.BulkDeleteAsync(_gtfsContext.Frequencies.Where(item => item.DataOrigin.Equals(config.Name, StringComparison.InvariantCultureIgnoreCase) && item.ImportId == config.ImportId));
-        await _gtfsContext.StopTimes.BulkDeleteAsync(_gtfsContext.StopTimes.Where(item => item.DataOrigin.Equals(config.Name, StringComparison.InvariantCultureIgnoreCase) && item.ImportId == config.ImportId));
-        await _gtfsContext.Shapes.BulkDeleteAsync(_gtfsContext.Shapes.Where(item => item.DataOrigin.Equals(config.Name, StringComparison.InvariantCultureIgnoreCase) && item.ImportId == config.ImportId));
+        await _gtfsContext.Routes.BulkDeleteAsync(_gtfsContext.Routes.Where(item => item.DataOrigin == config.Name && item.ImportId == config.ImportId));
+        await _gtfsContext.Trips.BulkDeleteAsync(_gtfsContext.Trips.Where(item => item.DataOrigin == config.Name && item.ImportId == config.ImportId));
+        await _gtfsContext.Stops.BulkDeleteAsync(_gtfsContext.Stops.Where(item => item.DataOrigin == config.Name && item.ImportId == config.ImportId));
+        await _gtfsContext.Calendars.BulkDeleteAsync(_gtfsContext.Calendars.Where(item => item.DataOrigin == config.Name && item.ImportId == config.ImportId));
+        await _gtfsContext.CalendarDates.BulkDeleteAsync(_gtfsContext.CalendarDates.Where(item => item.DataOrigin == config.Name && item.ImportId == config.ImportId));
+        await _gtfsContext.Frequencies.BulkDeleteAsync(_gtfsContext.Frequencies.Where(item => item.DataOrigin == config.Name && item.ImportId == config.ImportId));
+        await _gtfsContext.StopTimes.BulkDeleteAsync(_gtfsContext.StopTimes.Where(item => item.DataOrigin == config.Name && item.ImportId == config.ImportId));
+        await _gtfsContext.Shapes.BulkDeleteAsync(_gtfsContext.Shapes.Where(item => item.DataOrigin == config.Name && item.ImportId == config.ImportId));
     }
 
     public async Task ImportAsync(GTFSFeed feed)
