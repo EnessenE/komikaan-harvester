@@ -46,6 +46,7 @@ public class GenericGTFSSupplier
     {
         var options = new RestClientOptions(supplier.Url);
         var client = new RestClient(options);
+        options.UserAgent = "harvester/reasulus.nl";
         var request = new RestRequest() { Method = Method.Get };
         _logger.LogInformation("Request generated towards {url}", supplier.Url);
         // The cancellation token comes from the caller. You can still make a call without it.
