@@ -23,7 +23,7 @@ public class GenericGTFSSupplier
     {
 
         await SendMessageAsync("Started reading GTFS file", supplierConfig);
-        var reader = new GTFSReader<GTFSFeed>(false, supplierConfig.Name);
+        var reader = new GTFSReader<GTFSFeed>(false, supplierConfig.Name, supplierConfig.ImportId);
         var feed = await DownloadFeed(reader, supplierConfig);
 
         await SendMessageAsync("Finished reading GTFS file", supplierConfig);

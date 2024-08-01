@@ -37,6 +37,7 @@ namespace komikaan.Harvester.Contexts
             var connection = factory.CreateConnection();
             _channel = connection.CreateModel();
             _channel.BasicQos(0, 1, false);
+            _channel.ContinuationTimeout = TimeSpan.FromHours(3);
 
             _channel.ExchangeDeclare("harvester-notifications", ExchangeType.Direct, durable: true);
             _channel.QueueDeclare(queue: "harvesters",

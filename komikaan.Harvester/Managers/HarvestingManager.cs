@@ -64,8 +64,6 @@ namespace komikaan.Harvester.Managers
                 await SendMessageAsync(config, "Adjusting feed");
                 await AdjustFeedAsync(feed);
                 await SendMessageAsync(config, "Finished adjusting feed");
-                await AdjustImportsAsync(config, feed);
-                await SendMessageAsync(config, "Setting import ids");
                 _logger.LogInformation("Finished adjusting feed started {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
                 await SendMessageAsync(config, "Database import started!");
                 await _dataContext.ImportAsync(feed);
@@ -77,8 +75,11 @@ namespace komikaan.Harvester.Managers
                 _logger.LogInformation("Notified the gardeners for {name}", config.Name);
                 await SendMessageAsync(config, "Notified gardeners, starting to delete old data");
                 await _dataContext.DeleteOldDataAsync(config);
+                _logger.LogInformation("Old data cleanup");
+                await SendMessageAsync(config, "Cleaning old stops");
+                await _dataContext.CleanOldStopData();
                 await MarkAsFinished(config);
-                await SendMessageAsync(config, "Finished import");
+                await SendMessageAsync(config, "Finished import in " + stopwatch.Elapsed.ToString("g"));
             }
             catch (Exception error)
             {
@@ -91,49 +92,6 @@ namespace komikaan.Harvester.Managers
                 File.Delete("\\app\\gtfs_file.zip");
             }
 
-        }
-
-        private Task AdjustImportsAsync(SupplierConfiguration config, GTFSFeed feed)
-        {
-            foreach(var item in feed.Agencies)
-            {
-                item.ImportId = config.ImportId;
-            }
-
-            foreach (var item in feed.Routes)
-            {
-                item.ImportId = config.ImportId;
-            }
-            foreach (var item in feed.Trips)
-            {
-                item.ImportId = config.ImportId;
-            }
-            foreach (var item in feed.Stops)
-            {
-                item.ImportId = config.ImportId;
-            }
-            foreach (var item in feed.Calendars)
-            {
-                item.ImportId = config.ImportId;
-            }
-            foreach (var item in feed.CalendarDates)
-            {
-                item.ImportId = config.ImportId;
-            }
-            foreach (var item in feed.Frequencies)
-            {
-                item.ImportId = config.ImportId;
-            }
-            foreach (var item in feed.Agencies)
-            {
-                item.ImportId = config.ImportId;
-            }
-            foreach (var item in feed.Shapes)
-            {
-                item.ImportId = config.ImportId;
-            }
-
-            return Task.CompletedTask;
         }
 
         private async Task MarkAsFinished(SupplierConfiguration config)
