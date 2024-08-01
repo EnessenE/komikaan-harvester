@@ -39,7 +39,7 @@ internal class PostgresContext : IDataContext
          );
     }
 
-    public async Task CleanOldStopData()
+    public async Task CleanOldStopData(SupplierConfiguration config)
     {
         using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
 
@@ -52,15 +52,16 @@ internal class PostgresContext : IDataContext
 
     public async Task DeleteOldDataAsync(SupplierConfiguration config)
     {
-        await _gtfsContext.Agencies.BulkDeleteAsync(_gtfsContext.Agencies.Where(item => item.DataOrigin == config.Name && item.ImportId == config.ImportId));
-        await _gtfsContext.Routes.BulkDeleteAsync(_gtfsContext.Routes.Where(item => item.DataOrigin == config.Name && item.ImportId == config.ImportId));
-        await _gtfsContext.Trips.BulkDeleteAsync(_gtfsContext.Trips.Where(item => item.DataOrigin == config.Name && item.ImportId == config.ImportId));
-        await _gtfsContext.Stops.BulkDeleteAsync(_gtfsContext.Stops.Where(item => item.DataOrigin == config.Name && item.ImportId == config.ImportId));
-        await _gtfsContext.Calendars.BulkDeleteAsync(_gtfsContext.Calendars.Where(item => item.DataOrigin == config.Name && item.ImportId == config.ImportId));
-        await _gtfsContext.CalendarDates.BulkDeleteAsync(_gtfsContext.CalendarDates.Where(item => item.DataOrigin == config.Name && item.ImportId == config.ImportId));
-        await _gtfsContext.Frequencies.BulkDeleteAsync(_gtfsContext.Frequencies.Where(item => item.DataOrigin == config.Name && item.ImportId == config.ImportId));
-        await _gtfsContext.StopTimes.BulkDeleteAsync(_gtfsContext.StopTimes.Where(item => item.DataOrigin == config.Name && item.ImportId == config.ImportId));
-        await _gtfsContext.Shapes.BulkDeleteAsync(_gtfsContext.Shapes.Where(item => item.DataOrigin == config.Name && item.ImportId == config.ImportId));
+        using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
+        await dbConnection.ExecuteAsync(
+          @"CALL public.move_to_new_import(@id, @dataorigin)",
+             new
+             {
+                 id = config.ImportId,
+                 dataorigin = config.Name,
+             },
+              commandType: CommandType.Text
+          );
     }
 
     public async Task ImportAsync(GTFSFeed feed)

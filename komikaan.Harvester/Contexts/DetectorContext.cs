@@ -61,7 +61,7 @@ namespace komikaan.Harvester.Contexts
                     try
                     {
                         _channel.BasicAck(ea.DeliveryTag, false);
-                        ProcessMessageAsync(item).GetAwaiter().GetResult();
+                        await ProcessMessageAsync(item);
                     }
                     catch (Exception ex)
                     {

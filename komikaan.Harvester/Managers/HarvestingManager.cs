@@ -77,7 +77,7 @@ namespace komikaan.Harvester.Managers
                 await _dataContext.DeleteOldDataAsync(config);
                 _logger.LogInformation("Old data cleanup");
                 await SendMessageAsync(config, "Cleaning old stops");
-                await _dataContext.CleanOldStopData();
+                await _dataContext.CleanOldStopData(config);
                 await MarkAsFinished(config);
                 await SendMessageAsync(config, "Finished import in " + stopwatch.Elapsed.ToString("g"));
             }
