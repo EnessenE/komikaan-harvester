@@ -48,21 +48,34 @@ namespace komikaan.Harvester.Contexts
             _channel.QueueBind("harvesters", "harvester-notifications", "harvester");
 
             var consumer = new EventingBasicConsumer(_channel);
+            var importRunning = false;
             consumer.Received += async (model, ea) =>
             {
-                _logger.LogInformation("Received a message!");
-                var body = ea.Body.ToArray();
-                var message = Encoding.UTF8.GetString(body);
-                var item = JsonSerializer.Deserialize<SupplierConfiguration>(message);
-                try
+                if (!importRunning)
                 {
-                    _channel.BasicAck(ea.DeliveryTag, false);
-                    ProcessMessageAsync(item).GetAwaiter().GetResult();
+                    importRunning = true;
+                    _logger.LogInformation("Received a message!");
+                    var body = ea.Body.ToArray();
+                    var message = Encoding.UTF8.GetString(body);
+                    var item = JsonSerializer.Deserialize<SupplierConfiguration>(message);
+                    try
+                    {
+                        _channel.BasicAck(ea.DeliveryTag, false);
+                        ProcessMessageAsync(item).GetAwaiter().GetResult();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Unknown error");
+                        await SendMessageAsync(item, ex.Message);
+                    }
+                    importRunning = false;
                 }
-                catch (Exception ex)
+                else
                 {
-                    _logger.LogError(ex, "Unknown error");
-                    await SendMessageAsync(item, ex.Message);
+                    //This is a hack because I want to use RabbitMQ and that doesn't like long running tasks
+                    _logger.LogInformation("Got an early message, waiting and NACKing it");
+                    await Task.Delay(TimeSpan.FromMinutes(1));
+                    _channel.BasicNack(ea.DeliveryTag, false, true);
                 }
             };
             _channel.BasicConsume(queue: "harvesters",
