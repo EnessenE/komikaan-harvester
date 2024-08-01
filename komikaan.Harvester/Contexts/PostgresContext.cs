@@ -39,6 +39,17 @@ internal class PostgresContext : IDataContext
          );
     }
 
+    public async Task CleanOldStopData()
+    {
+        using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
+
+        await dbConnection.ExecuteAsync(
+         @"CALL public.clean_old_data()",
+             commandType: CommandType.Text
+         );
+    }
+
+
     public async Task DeleteOldDataAsync(SupplierConfiguration config)
     {
         await _gtfsContext.Agencies.BulkDeleteAsync(_gtfsContext.Agencies.Where(item => item.DataOrigin == config.Name && item.ImportId == config.ImportId));
