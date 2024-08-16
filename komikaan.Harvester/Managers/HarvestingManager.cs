@@ -78,7 +78,7 @@ namespace komikaan.Harvester.Managers
                 _logger.LogInformation("Old data cleanup");
                 await SendMessageAsync(config, "Cleaning old stops");
                 await _dataContext.CleanOldStopData(config);
-                await MarkAsFinished(config);
+                await MarkAsFinished(config, true);
                 await SendMessageAsync(config, "Finished import in " + stopwatch.Elapsed.ToString("g"));
             }
             catch (Exception error)
@@ -89,16 +89,17 @@ namespace komikaan.Harvester.Managers
             }
             finally
             {
+                await MarkAsFinished(config, false);
                 File.Delete("\\app\\gtfs_file.zip");
             }
 
         }
 
-        private async Task MarkAsFinished(SupplierConfiguration config)
+        private async Task MarkAsFinished(SupplierConfiguration config, bool success)
         {
             config.LastUpdated = DateTimeOffset.UtcNow;
             config.DownloadPending = false;
-            await _dataContext.MarkDownload(config);
+            await _dataContext.MarkDownload(config, success);
         }
 
         private async Task AdjustFeedAsync(GTFS.GTFSFeed feed)

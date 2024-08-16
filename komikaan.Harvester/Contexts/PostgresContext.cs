@@ -23,7 +23,7 @@ internal class PostgresContext : IDataContext
 
     }
 
-    public async Task MarkDownload(SupplierConfiguration config)
+    public async Task MarkDownload(SupplierConfiguration config, bool success)
     {
         using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
 
@@ -33,7 +33,7 @@ internal class PostgresContext : IDataContext
         {
             target = config.Name,
             last_update = config.LastUpdated,
-            pending = config.DownloadPending
+            pending = false
         },
              commandType: CommandType.Text
          );
