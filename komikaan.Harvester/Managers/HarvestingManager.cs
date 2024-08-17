@@ -62,7 +62,7 @@ namespace komikaan.Harvester.Managers
                 _logger.LogInformation("Finished retrieving data in {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
                 _logger.LogInformation("Adjusting feed started {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
                 await SendMessageAsync(config, "Adjusting feed");
-                await AdjustFeedAsync(feed);
+                await AdjustFeedAsync(feed, config);
                 await SendMessageAsync(config, "Finished adjusting feed");
                 _logger.LogInformation("Finished adjusting feed started {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
                 await SendMessageAsync(config, "Database import started!");
@@ -102,7 +102,7 @@ namespace komikaan.Harvester.Managers
             await _dataContext.MarkDownload(config, success);
         }
 
-        private async Task AdjustFeedAsync(GTFS.GTFSFeed feed)
+        private async Task AdjustFeedAsync(GTFS.GTFSFeed feed, SupplierConfiguration config)
         {
             var amountPerChunk = Math.Round((decimal)feed.Stops.Count / 10, 0);
             var chunks = feed.Stops.ToList().Chunk((int)amountPerChunk);
@@ -113,7 +113,7 @@ namespace komikaan.Harvester.Managers
             {
                 var task = new Task(async () =>
                 {
-                    var data = await DetectStopsType(feed, stops);
+                    var data = await DetectStopsType(feed, config, stops);
                     Interlocked.Increment(ref totalUnknown);
                 });
                 task.Start();
@@ -124,7 +124,7 @@ namespace komikaan.Harvester.Managers
             await Task.CompletedTask;
         }
 
-        private async Task<int> DetectStopsType(GTFS.GTFSFeed feed, IEnumerable<Stop> stops)
+        private async Task<int> DetectStopsType(GTFS.GTFSFeed feed, SupplierConfiguration config, IEnumerable<Stop> stops)
         {
             var iteration = 0;
             int totalUnknown = 0;
@@ -149,9 +149,11 @@ namespace komikaan.Harvester.Managers
                         // _logger.LogInformation("Got {x} relatedRoutes, {time}", relatedRoutes.Count, stopwatch.ElapsedMilliseconds);
                         var routeTypes = relatedRoutes.Select(route => route.Type).ToList();
                         // _logger.LogInformation("Got {x} routeTypes, {time}", routeTypes.Count, stopwatch.ElapsedMilliseconds);
-                        var groupedTypes = routeTypes.GroupBy(x => DetectStopType(x))
+                        var groupedTypes = routeTypes.GroupBy(x => ConvertStopType(x))
                                  .ToDictionary(x => x.Key, y => y.Count());
                         // _logger.LogInformation("Got {x} groupedTypes, {time}", groupedTypes.Count, stopwatch.ElapsedMilliseconds);
+
+
 
                         if (groupedTypes.Count() == 1)
                         {
@@ -165,6 +167,16 @@ namespace komikaan.Harvester.Managers
                         else
                         {
                             stop.StopType = StopType.Unknown;
+                        }
+
+
+                        if (config.Mapping != null && config.Mapping.Any())
+                        {
+                            var overrideStopType = config.Mapping.FirstOrDefault(mapping => mapping.ListedType == (int) stop.StopType);
+                            if (overrideStopType != null)
+                            {
+                                stop.StopType = ConvertStopType(overrideStopType.NewType);
+                            }
                         }
                     }
                     else
@@ -196,7 +208,7 @@ namespace komikaan.Harvester.Managers
             return Task.CompletedTask;
         }
 
-        public StopType DetectStopType(RouteTypeExtended routeType)
+        public StopType ConvertStopType(RouteTypeExtended routeType)
         {
             switch (routeType)
             {
