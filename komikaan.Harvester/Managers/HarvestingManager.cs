@@ -62,7 +62,7 @@ namespace komikaan.Harvester.Managers
                 _logger.LogInformation("Finished retrieving data in {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
 
                 config.Mapping = await _dataContext.GetTypeMappingsAsync(config);
-
+                _logger.LogInformation("Supplier has {x} mappings", config.Mapping?.Count);
                 _logger.LogInformation("Adjusting feed started {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
                 await SendMessageAsync(config, "Adjusting feed");
                 await AdjustFeedAsync(feed, config);
@@ -82,6 +82,7 @@ namespace komikaan.Harvester.Managers
                 await SendMessageAsync(config, "Cleaning old stops");
                 await _dataContext.CleanOldStopData(config);
                 await MarkAsFinished(config, true);
+                _logger.LogInformation("Finished import in {time}", stopwatch.Elapsed.ToString("g"));
                 await SendMessageAsync(config, "Finished import in " + stopwatch.Elapsed.ToString("g"));
             }
             catch (Exception error)
