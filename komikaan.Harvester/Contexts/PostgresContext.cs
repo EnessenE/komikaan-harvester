@@ -64,6 +64,23 @@ internal class PostgresContext : IDataContext
           );
     }
 
+    public async Task<List<SupplierTypeMapping>?> GetTypeMappingsAsync(SupplierConfiguration config)
+    {
+        using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
+
+        var data = await dbConnection.QueryAsync<SupplierTypeMapping>(
+        @"select * from get_mappings_from_supplier(@supplier)",
+        new
+            {
+                supplier = config.Name
+            },
+            commandType: CommandType.Text
+        );
+
+        return data?.ToList();
+    }
+
+
     public async Task ImportAsync(GTFSFeed feed)
     {
 

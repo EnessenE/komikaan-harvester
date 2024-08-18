@@ -9,4 +9,5 @@ public interface IDataContext
     Task MarkDownload(SupplierConfiguration config, bool success);
     Task CleanOldStopData(SupplierConfiguration config);
     Task DeleteOldDataAsync(SupplierConfiguration config);
+    Task<List<SupplierTypeMapping>?> GetTypeMappingsAsync(SupplierConfiguration config);
 }
