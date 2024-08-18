@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using Dapper;
 using GTFS;
 using GTFS.Entities;
 using GTFS.Entities.Enumerations;
@@ -30,6 +31,8 @@ namespace komikaan.Harvester.Managers
             _gardenerContext = gardenerContext;
             _discordWebHookClient = discordWebhookClient;
             _genericGTFSSupplier = genericGTFSSupplier;
+
+            Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
@@ -61,11 +64,11 @@ namespace komikaan.Harvester.Managers
                 var feed = await _genericGTFSSupplier.RetrieveFeed(config);
                 _logger.LogInformation("Finished retrieving data in {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
 
-                config.Mapping = await _dataContext.GetTypeMappingsAsync(config);
-                _logger.LogInformation("Supplier has {x} mappings", config.Mapping?.Count);
+                var mappings = await _dataContext.GetTypeMappingsAsync(config);
+                _logger.LogInformation("Supplier has {x} mappings", mappings?.Count);
                 _logger.LogInformation("Adjusting feed started {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
                 await SendMessageAsync(config, "Adjusting feed");
-                await AdjustFeedAsync(feed, config);
+                await AdjustFeedAsync(feed, config, mappings);
                 await SendMessageAsync(config, "Finished adjusting feed");
                 _logger.LogInformation("Finished adjusting feed started {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
                 await SendMessageAsync(config, "Database import started!");
@@ -106,7 +109,7 @@ namespace komikaan.Harvester.Managers
             await _dataContext.MarkDownload(config, success);
         }
 
-        private async Task AdjustFeedAsync(GTFS.GTFSFeed feed, SupplierConfiguration config)
+        private async Task AdjustFeedAsync(GTFS.GTFSFeed feed, SupplierConfiguration config, List<SupplierTypeMapping> mappings)
         {
             var amountPerChunk = Math.Round((decimal)feed.Stops.Count / 10, 0);
             var chunks = feed.Stops.ToList().Chunk((int)amountPerChunk);
@@ -117,7 +120,7 @@ namespace komikaan.Harvester.Managers
             {
                 var task = new Task(async () =>
                 {
-                    var data = await DetectStopsType(feed, config, stops);
+                    var data = await DetectStopsType(feed, config, mappings, stops);
                     Interlocked.Increment(ref totalUnknown);
                 });
                 task.Start();
@@ -128,7 +131,7 @@ namespace komikaan.Harvester.Managers
             await Task.CompletedTask;
         }
 
-        private async Task<int> DetectStopsType(GTFS.GTFSFeed feed, SupplierConfiguration config, IEnumerable<Stop> stops)
+        private async Task<int> DetectStopsType(GTFS.GTFSFeed feed, SupplierConfiguration config, List<SupplierTypeMapping> mappings, IEnumerable<Stop> stops)
         {
             var iteration = 0;
             int totalUnknown = 0;
@@ -158,7 +161,6 @@ namespace komikaan.Harvester.Managers
                         // _logger.LogInformation("Got {x} groupedTypes, {time}", groupedTypes.Count, stopwatch.ElapsedMilliseconds);
 
 
-
                         if (groupedTypes.Count() == 1)
                         {
                             var StopType = groupedTypes.First().Key;
@@ -174,12 +176,12 @@ namespace komikaan.Harvester.Managers
                         }
 
 
-                        if (config.Mapping != null && config.Mapping.Any())
+                        if (mappings != null && mappings.Any())
                         {
-                            var overrideStopType = config.Mapping.FirstOrDefault(mapping => mapping.ListedType == (int) stop.StopType);
+                            var overrideStopType = mappings.FirstOrDefault(mapping => mapping.ListedType == (int) stop.StopType);
                             if (overrideStopType != null)
                             {
-                                stop.StopType = ConvertStopType(overrideStopType.NewType);
+                                stop.StopType = (StopType) overrideStopType.NewType;
                             }
                         }
                     }
@@ -264,7 +266,8 @@ namespace komikaan.Harvester.Managers
 
                 default:
                     _logger.LogInformation("Unknown type: {type}", routeType);
-                    return StopType.Unknown;
+                    //A hack to check for broken items
+                    return StopType.CableCar;
             }
         }
 
