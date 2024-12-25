@@ -94,6 +94,7 @@ namespace komikaan.Harvester.Managers
                 _logger.LogCritical("Failed import for {supplier}", config.Name);
                 _logger.LogError(error, "Following error:");
                 await MarkAsFinished(config, false);
+                _logger.LogInformation("Marked as failed!");
             }
             finally
             {
