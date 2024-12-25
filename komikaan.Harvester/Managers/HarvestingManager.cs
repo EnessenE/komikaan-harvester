@@ -93,10 +93,10 @@ namespace komikaan.Harvester.Managers
                 await SendMessageAsync(config, "Import failed!");
                 _logger.LogCritical("Failed import for {supplier}", config.Name);
                 _logger.LogError(error, "Following error:");
+                await MarkAsFinished(config, false);
             }
             finally
             {
-                await MarkAsFinished(config, false);
                 File.Delete("\\app\\gtfs_file.zip");
             }
 
