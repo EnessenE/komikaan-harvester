@@ -1,12 +1,9 @@
 using System.Reflection;
 using JNogueira.Discord.Webhook.Client;
 using komikaan.Harvester.Contexts;
-using komikaan.Harvester.Helpers;
 using komikaan.Harvester.Interfaces;
 using komikaan.Harvester.Managers;
 using komikaan.Harvester.Suppliers;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using Serilog;
 
 namespace komikaan.Harvester
@@ -49,12 +46,7 @@ namespace komikaan.Harvester
             builder.Services.AddSingleton<GenericGTFSSupplier>();
             builder.Services.AddHostedService<DetectorContext>();
             builder.Services.AddSingleton<IDataContext, PostgresContext>();
-            builder.Services.AddDbContext<GTFSContext>(options =>
-            {
-                options.UseNpgsql(builder.Configuration.GetConnectionString("HarvestingTarget"), o => o.UseNetTopologySuite());
-                options.UseSnakeCaseNamingConvention();
-                options.ReplaceService<ISqlGenerationHelper, NpgsqlSqlGenerationLowercasingHelper>();
-            }, optionsLifetime: ServiceLifetime.Singleton, contextLifetime: ServiceLifetime.Singleton); 
+            builder.Services.AddSingleton<GTFSContext>();
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.

@@ -73,6 +73,8 @@ namespace komikaan.Harvester.Contexts
                 else
                 {
                     //This is a hack because I want to use RabbitMQ and that doesn't like long running tasks
+                    //note: Why don't you just close the consumer?
+                    //quick look over there!
                     _logger.LogInformation("Got an early message, waiting and NACKing it");
                     await Task.Delay(TimeSpan.FromMinutes(1));
                     _channel.BasicNack(ea.DeliveryTag, false, true);
@@ -110,7 +112,7 @@ namespace komikaan.Harvester.Contexts
             {
                 await _discordWebHookClient.SendToDiscord(message);
             }
-            catch(Exception err)
+            catch (Exception err)
             {
                 _logger.LogError(err, "Failed to send a message about a failure");
                 await _discordWebHookClient.SendToDiscord(new DiscordMessage("Unknown failure", Environment.MachineName));

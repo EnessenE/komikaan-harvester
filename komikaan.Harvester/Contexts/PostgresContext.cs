@@ -2,7 +2,6 @@
 using GTFS;
 using komikaan.Common.Models;
 using komikaan.Harvester.Interfaces;
-using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using System.Data;
 
@@ -19,7 +18,7 @@ internal class PostgresContext : IDataContext
     {
         _logger = logger;
         _gtfsContext = gtfsContext;
-        _connectionString = configuration.GetConnectionString("HarvestingTarget") ?? throw new InvalidOperationException("A GTFS postgres database connection should be defined!");
+        _connectionString = configuration.GetConnectionString("gtfs") ?? throw new InvalidOperationException("A GTFS postgres database connection should be defined!");
 
     }
 
@@ -28,12 +27,12 @@ internal class PostgresContext : IDataContext
         using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
 
         await dbConnection.ExecuteAsync(
-         @"CALL public.update_supplier_for_download(@target, @last_update, @pending)",
+         @"CALL public.update_supplier_for_download(@target, @last_update, @successfullyDownloaded)",
         new
         {
             target = config.Name,
             last_update = config.LastUpdated,
-            pending = false
+            successfullyDownloaded = success
         },
              commandType: CommandType.Text
          );
@@ -84,69 +83,16 @@ internal class PostgresContext : IDataContext
     public async Task ImportAsync(GTFSFeed feed)
     {
 
-        _gtfsContext.Agencies.BulkMerge(feed.Agencies, operation =>
-        {
-            operation.InsertIfNotExists = true;
-            operation.MergeKeepIdentity = true;
-            operation.ColumnPrimaryKeyExpression = c => new { c.Id, c.DataOrigin };
+        await _gtfsContext.BulkMergeAgenciesAsync(feed.Agencies);
+        await _gtfsContext.BulkMergeRoutesAsync(feed.Routes);
+        await _gtfsContext.BulkMergeTripsAsync(feed.Trips);
+        await _gtfsContext.BulkMergeStopsAsync(feed.Stops);
+        await _gtfsContext.BulkMergeCalendarsAsync(feed.Calendars);
+        await _gtfsContext.BulkMergeAsync(feed.CalendarDates);
+        await _gtfsContext.BulkMergeAsync(feed.Frequencies);
+        await _gtfsContext.BulkMergeAsync(feed.StopTimes);
+        await _gtfsContext.BulkMergeAsync(feed.Shapes);
 
-        });
-        _gtfsContext.Routes.BulkMerge(feed.Routes, operation =>
-        {
-            operation.InsertIfNotExists = true;
-            operation.MergeKeepIdentity = true;
-            operation.ColumnPrimaryKeyExpression = c => new { c.Id, c.DataOrigin };
-
-        });
-        _gtfsContext.Trips.BulkMerge(feed.Trips.ToList(), operation =>
-        {
-            operation.InsertIfNotExists = true;
-            operation.MergeKeepIdentity = true;
-            operation.ColumnPrimaryKeyExpression = c => new { c.Id, c.DataOrigin };
-
-        });
-        _gtfsContext.Stops.BulkMerge(feed.Stops, operation =>
-        {
-            operation.InsertIfNotExists = true;
-            operation.MergeKeepIdentity = true;
-            operation.ColumnPrimaryKeyExpression = c => new { c.Id, c.DataOrigin };
-
-        });
-        _gtfsContext.Calendars.BulkMerge(feed.Calendars, operation =>
-        {
-            operation.InsertIfNotExists = true;
-            operation.MergeKeepIdentity = true;
-            operation.ColumnPrimaryKeyExpression = c => new { c.ServiceId, c.DataOrigin };
-
-        });
-        _gtfsContext.CalendarDates.BulkMerge(feed.CalendarDates, operation =>
-        {
-            operation.InsertIfNotExists = true;
-            operation.MergeKeepIdentity = true;
-            operation.ColumnPrimaryKeyExpression = c => new { c.ServiceId, c.Date, c.DataOrigin };
-
-        });
-        _gtfsContext.Frequencies.BulkMerge(feed.Frequencies, operation =>
-        {
-            operation.InsertIfNotExists = true;
-            operation.MergeKeepIdentity = true;
-        });
-        _gtfsContext.StopTimes.BulkMerge(feed.StopTimes.ToList(), operation =>
-        {
-            operation.InsertIfNotExists = true;
-            operation.MergeKeepIdentity = true;
-            operation.BatchSize = 10000;
-
-        });
-        _gtfsContext.Shapes.BulkMerge(feed.Shapes.ToList(), operation =>
-        {
-            operation.InsertIfNotExists = true;
-            operation.MergeKeepIdentity = true;
-            operation.BatchSize = 10000;
-            operation.ColumnPrimaryKeyExpression = c => new { c.Id, c.DataOrigin, c.Sequence };
-        });
-
-        await _gtfsContext.SaveChangesAsync();
         _logger.LogInformation("Done with import.");
     }
 
