@@ -25,7 +25,34 @@ namespace komikaan.Harvester.Contexts
         }
 
 
-        public Task StartAsync(CancellationToken token)
+        public async Task StartAsync(CancellationToken token)
+        {
+            if (_configuration.GetValue("localtesting", false))
+            {
+                _logger.LogWarning("Running in local test mode");
+                await ProcessMessageAsync(new SupplierConfiguration
+                {
+                    RetrievalType = RetrievalType.LOCAL,
+                    DataType = SupplierType.GTFS,
+                    PollingRate = TimeSpan.Zero,
+                    Name = "Amtrak",
+                    Url = "C:\\Users\\Enes\\Downloads\\amtrak.zip",
+                    ETag =null,
+                    ImportId = Guid.Parse("a8c4ea9f-780f-4c88-b9b0-86924df53455"),
+                    LatestSuccesfullImportId = Guid.Parse("40d5bb36-fcff-4b85-ac85-16eb37980aec"),
+                    LastUpdated = DateTimeOffset.UtcNow,
+                    LastAttempt = null,
+                    LastChecked = DateTimeOffset.UtcNow,
+                    DownloadPending = false
+                });
+            }
+            else
+            {
+                StartDetector();
+            }
+        }
+
+        private void StartDetector()
         {
             _logger.LogInformation("Connecting to detector queue");
             var factory = new ConnectionFactory();
@@ -73,6 +100,8 @@ namespace komikaan.Harvester.Contexts
                 else
                 {
                     //This is a hack because I want to use RabbitMQ and that doesn't like long running tasks
+                    //note: Why don't you just close the consumer?
+                    //quick look over there!
                     _logger.LogInformation("Got an early message, waiting and NACKing it");
                     await Task.Delay(TimeSpan.FromMinutes(1));
                     _channel.BasicNack(ea.DeliveryTag, false, true);
@@ -82,7 +111,6 @@ namespace komikaan.Harvester.Contexts
                                  autoAck: false,
                                  consumer: consumer, consumerTag: "harvester");
             _logger.LogInformation("Started, waiting for a new import");
-            return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
@@ -92,9 +120,9 @@ namespace komikaan.Harvester.Contexts
 
         private async Task ProcessMessageAsync(SupplierConfiguration item)
         {
-            _logger.LogInformation("Starting an import for {name}", item.Name);
-            using (_logger.BeginScope(item.Name))
+            using (_logger.BeginScope("{name} - {import}", item.Name, item.ImportId))
             {
+                _logger.LogInformation("Starting an import", item.Name);
                 await _harvestingManager.Harvest(item);
             }
         }
@@ -110,7 +138,7 @@ namespace komikaan.Harvester.Contexts
             {
                 await _discordWebHookClient.SendToDiscord(message);
             }
-            catch(Exception err)
+            catch (Exception err)
             {
                 _logger.LogError(err, "Failed to send a message about a failure");
                 await _discordWebHookClient.SendToDiscord(new DiscordMessage("Unknown failure", Environment.MachineName));

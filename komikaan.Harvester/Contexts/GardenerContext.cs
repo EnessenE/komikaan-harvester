@@ -7,7 +7,7 @@ namespace komikaan.Harvester.Contexts
     public class GardenerContext
     {
         private IModel _channel;
-        private ILogger<GardenerContext> _logger;
+        private readonly ILogger<GardenerContext> _logger;
         private readonly IConfiguration _configuration;
 
         public GardenerContext(ILogger<GardenerContext> logger, IConfiguration configuration)
