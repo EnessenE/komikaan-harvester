@@ -44,16 +44,23 @@ public class GenericGTFSSupplier
 
     private async Task<GTFSFeed> DownloadFeed(GTFSReader<GTFSFeed> feed, SupplierConfiguration supplier)
     {
-        var options = new RestClientOptions(supplier.Url);
-        var client = new RestClient(options);
-        options.UserAgent = "harvester/reasulus.nl";
-        var request = new RestRequest() { Method = Method.Get };
-        _logger.LogInformation("Request generated towards {url}", supplier.Url);
-        // The cancellation token comes from the caller. You can still make a call without it.
-        var response = await client.DownloadDataAsync(request);
-        File.WriteAllBytes(@"\app\gtfs_file.zip", response);
+        if (supplier.RetrievalType == RetrievalType.REST)
+        {
+            var options = new RestClientOptions(supplier.Url);
+            var client = new RestClient(options);
+            options.UserAgent = "harvester/reasulus.nl";
+            var request = new RestRequest() { Method = Method.Get };
+            _logger.LogInformation("Request generated towards {url}", supplier.Url);
+            // The cancellation token comes from the caller. You can still make a call without it.
+            var response = await client.DownloadDataAsync(request);
+            File.WriteAllBytes(@"\app\gtfs_file.zip", response);
 
-        return feed.Read(@"\app\gtfs_file.zip");
+            return feed.Read(@"\app\gtfs_file.zip");
+        }
+        else 
+        {
+            return feed.Read(supplier.Url);
+        }
     }
 
     private async Task ChunkMapStopsAsync(GTFSFeed feed)
@@ -127,7 +134,7 @@ public class GenericGTFSSupplier
             }
             else
             {
-                var added = feed.StopTime_Trips.TryAdd(key.ToLowerInvariant(), new ConcurrentBag<Trip>() { entity }); 
+                var added = feed.StopTime_Trips.TryAdd(key.ToLowerInvariant(), new ConcurrentBag<Trip>() { entity });
                 if (!added)
                 {
                     feed.StopTime_Trips[key].Add(entity);
@@ -140,7 +147,7 @@ public class GenericGTFSSupplier
     private async Task SendMessageAsync(string body, SupplierConfiguration supplier)
     {
         _logger.LogInformation(body);
-        var message = new DiscordMessage(            "**Import progress for " + supplier.Name + "**\n" + body,
+        var message = new DiscordMessage("**Import progress for " + supplier.Name + "**\n" + body,
             username: Environment.MachineName,
             tts: false
         );
