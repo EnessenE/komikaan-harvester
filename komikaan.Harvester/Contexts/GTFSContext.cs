@@ -1,10 +1,7 @@
 ﻿using GTFS.Entities;
-using GTFS.Entities.Enumerations;
 using Npgsql;
 using Route = GTFS.Entities.Route;
 using System.Diagnostics;
-using Dapper;
-using System.Data;
 
 namespace komikaan.Harvester.Contexts;
 
@@ -22,19 +19,15 @@ internal class GTFSContext
         // Build the NpgsqlDataSource
         var builder = new NpgsqlDataSourceBuilder(connectionString);
         // Map composite types for each entity (these are the custom types in your PostgreSQL DB)
-        builder.MapComposite<Trip>("public.trips_type");
+        builder.MapComposite<PsqlTrip>("public.trips_type");
         builder.MapComposite<Agency>("public.agencies_type");
-        builder.MapComposite<Route>("public.routes_type");
-        builder.MapComposite<Stop>("public.stops_type");
+        builder.MapComposite<PsqlRoute>("public.routes_type");
+        builder.MapComposite<PsqlStop>("public.stops_type");
         builder.MapComposite<Calendar>("public.calenders_type");
-        builder.MapComposite<CalendarDate>("public.calendar_dates_type");
+        builder.MapComposite<PsqlCalendarDate>("public.calendar_dates_type");
         builder.MapComposite<Frequency>("public.frequencies_type");
-        builder.MapComposite<StopTime>("public.stop_times_type");
-        builder.MapComposite<Shape>("public.shapes_type");
-
-        // Register the type handler
-        SqlMapper.AddTypeHandler(new EnumTypeHandler<RouteTypeExtended>());
-        //builder.MapEnum<RouteTypeExtended>("integer");
+        builder.MapComposite<PsqlStopTime>("public.stop_times_type");
+        builder.MapComposite<PsqlShape>("public.shapes_type");
 
         // Build the NpgsqlDataSource
         _dataSource = builder.Build();
@@ -44,7 +37,7 @@ internal class GTFSContext
     private async Task UpsertEntityAsync<T>(string procedureName, string tvpTypeName, IEnumerable<T> entities)
     {
         var stopwatch = Stopwatch.StartNew();
-        var size = 500;
+        var size = 100000;
         _logger.LogInformation("Importing to {procedure}", procedureName);
         var chunks = entities.Chunk(size);
         _logger.LogInformation("Split into {amount} of chunks of {size}", chunks.Count(), size);
@@ -53,20 +46,15 @@ internal class GTFSContext
         foreach (var chunk in chunks)
         {
             totalGrabbed += 1;
-            _logger.LogInformation("Working on {grab}/{total}", totalGrabbed, chunks.Count());
-
-            // Preprocess entities to convert enums to integers
-            var processedChunk = chunk.Select(e => ConvertEnumsToIntegers(e)).ToArray();
+            _logger.LogInformation("Working on {grab}/{total} for {procedureName}", totalGrabbed, chunks.Count(), procedureName);
 
             using (var connection = _dataSource.CreateConnection())
             {
+
                 var command = new NpgsqlCommand($"CALL {procedureName}(@items)", connection);
                 await connection.OpenAsync();
 
-                // Pass the array of objects directly, Npgsql will handle serialization
-                var parameter = command.Parameters.AddWithValue("@items", processedChunk);
-
-                // Specify the custom composite type (e.g., public.routes_type) for the array
+                var parameter = command.Parameters.AddWithValue("@items", chunk);
                 parameter.DataTypeName = tvpTypeName + "[]";  // Specify the array of custom composite type
 
                 await command.ExecuteNonQueryAsync();
@@ -76,45 +64,7 @@ internal class GTFSContext
         _logger.LogInformation("Finished importing to {procedure} in {time}", procedureName, stopwatch.Elapsed);
     }
 
-    // Helper method to recursively convert enums in an object to integers
-    private static T ConvertEnumsToIntegers<T>(T entity)
-    {
-        if (entity == null)
-            return default;
 
-        var type = entity.GetType();
-        var properties = type.GetProperties();
-
-        // Create a copy of the object to modify
-        var result = Activator.CreateInstance(type);
-
-        foreach (var property in properties)
-        {
-            var value = property.GetValue(entity);
-
-            if (value != null)
-            {
-                if (property.PropertyType.IsEnum)
-                {
-                    // Convert enum to its integer value
-                    property.SetValue(result, Convert.ToInt32(value));
-                }
-                else if (property.PropertyType.IsClass && property.PropertyType != typeof(string))
-                {
-                    // If the property is a class (but not a string), recurse
-                    var convertedValue = ConvertEnumsToIntegers(value);
-                    property.SetValue(result, convertedValue);
-                }
-                else
-                {
-                    // For all other types (non-enum and non-class), just copy the value
-                    property.SetValue(result, value);
-                }
-            }
-        }
-
-        return (T)result;
-    }
 
     // Bulk upsert for agencies
     public async Task UpsertAgenciesAsync(IEnumerable<Agency> agencies)
@@ -129,7 +79,7 @@ internal class GTFSContext
     {
         const string procedureName = "public.upsert_routes";
         const string tvpTypeName = "public.routes_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, routes);
+        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(routes));
     }
 
     public async Task UpsertCalendarsAsync(IEnumerable<Calendar> calenders)
@@ -144,7 +94,7 @@ internal class GTFSContext
     {
         const string procedureName = "public.upsert_stops";
         const string tvpTypeName = "public.stops_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, stops);
+        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(stops));
     }
 
     // Bulk upsert for trips
@@ -152,7 +102,7 @@ internal class GTFSContext
     {
         const string procedureName = "public.upsert_trips";
         const string tvpTypeName = "public.trips_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, trips);
+        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(trips));
     }
 
     // Bulk upsert for calendar dates
@@ -160,7 +110,7 @@ internal class GTFSContext
     {
         const string procedureName = "public.upsert_calendar_dates";
         const string tvpTypeName = "public.calendar_dates_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, calendarDates);
+        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(calendarDates));
     }
 
     // Bulk upsert for frequencies
@@ -176,7 +126,7 @@ internal class GTFSContext
     {
         const string procedureName = "public.upsert_stop_times";
         const string tvpTypeName = "public.stop_times_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, stopTimes);
+        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(stopTimes));
     }
 
     // Bulk upsert for shapes
@@ -184,21 +134,62 @@ internal class GTFSContext
     {
         const string procedureName = "public.upsert_shapes";
         const string tvpTypeName = "public.shapes_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, shapes);
+        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(shapes));
     }
 
-}
 
-public class EnumTypeHandler<T> : SqlMapper.TypeHandler<T> where T : Enum
-{
-    public override T Parse(object value)
+    private static IEnumerable<PsqlStopTime> ToPsql(IEnumerable<StopTime> items)
     {
-        return (T)Enum.Parse(typeof(T), Convert.ToString(value));
+        foreach (var item in items)
+        {
+            var psqlItem = new PsqlStopTime(item);
+            yield return psqlItem;
+        }
+    }
+    private static IEnumerable<PsqlRoute> ToPsql(IEnumerable<Route> items)
+    {
+        foreach (var item in items)
+        {
+            var psqlItem = new PsqlRoute(item);
+            yield return psqlItem;
+        }
     }
 
-    public override void SetValue(IDbDataParameter parameter, T value)
+    private static IEnumerable<PsqlTrip> ToPsql(IEnumerable<Trip> items)
     {
-        parameter.Value = (int)Enum.Parse(typeof(T), Convert.ToString(value));
-        parameter.DbType = DbType.Int32;
+        foreach (var item in items)
+        {
+            var psqlItem = new PsqlTrip(item);
+            yield return psqlItem;
+        }
     }
+
+    private static IEnumerable<PsqlStop> ToPsql(IEnumerable<Stop> items)
+    {
+        foreach (var item in items)
+        {
+            var psqlItem = new PsqlStop(item);
+            yield return psqlItem;
+        }
+    }
+
+    private static IEnumerable<PsqlCalendarDate> ToPsql(IEnumerable<CalendarDate> items)
+    {
+        foreach (var item in items)
+        {
+            var psqlItem = new PsqlCalendarDate(item);
+            yield return psqlItem;
+        }
+    }
+
+
+    private static IEnumerable<PsqlShape> ToPsql(IEnumerable<Shape> items)
+    {
+        foreach (var item in items)
+        {
+            var psqlItem = new PsqlShape(item);
+            yield return psqlItem;
+        }
+    }
+
 }

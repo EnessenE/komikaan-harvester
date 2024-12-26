@@ -90,7 +90,7 @@ namespace komikaan.Harvester.Managers
             }
             catch (Exception error)
             {
-                await SendMessageAsync(config, "Import failed!");
+                await SendMessageAsync(config, "Import failed! <@124928188647211009>");
                 _logger.LogCritical("Failed import for {supplier}", config.Name);
                 _logger.LogError(error, "Following error:");
                 await MarkAsFinished(config, false);

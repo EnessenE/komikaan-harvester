@@ -89,7 +89,7 @@ internal class PostgresContext : IDataContext
         await _gtfsContext.UpsertStopsAsync(feed.Stops);
         await _gtfsContext.UpsertCalendarsAsync(feed.Calendars);
         await _gtfsContext.UpsertCalendarDatesAsync(feed.CalendarDates);
-        await _gtfsContext.UpsertFrequenciesAsync(feed.Frequencies);
+        //await _gtfsContext.UpsertFrequenciesAsync(feed.Frequencies);
         await _gtfsContext.UpsertStopTimesAsync(feed.StopTimes);
         await _gtfsContext.UpsertShapesAsync(feed.Shapes);
 
