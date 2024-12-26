@@ -25,7 +25,34 @@ namespace komikaan.Harvester.Contexts
         }
 
 
-        public Task StartAsync(CancellationToken token)
+        public async Task StartAsync(CancellationToken token)
+        {
+            if (_configuration.GetValue("localtesting", false))
+            {
+                _logger.LogWarning("Running in local test mode");
+                await ProcessMessageAsync(new SupplierConfiguration
+                {
+                    RetrievalType = RetrievalType.LOCAL,
+                    DataType = SupplierType.GTFS,
+                    PollingRate = TimeSpan.Zero,
+                    Name = "sncf-ter",
+                    Url = "C:\\Users\\Enes\\Downloads\\export-ter-gtfs-last.zip",
+                    ETag = "\u0022676a01fd-32bef1\u0022",
+                    ImportId = Guid.Parse("904a1ad7-0857-4988-bad0-2263d32ec33d"),
+                    LatestSuccesfullImportId = Guid.Parse("e276f4b3-bdd8-44c4-a71a-964c7d68f302"),
+                    LastUpdated = DateTimeOffset.UtcNow,
+                    LastAttempt = null,
+                    LastChecked = DateTimeOffset.UtcNow,
+                    DownloadPending = false
+                });
+            }
+            else
+            {
+                StartDetector();
+            }
+        }
+
+        private void StartDetector()
         {
             _logger.LogInformation("Connecting to detector queue");
             var factory = new ConnectionFactory();
@@ -84,7 +111,6 @@ namespace komikaan.Harvester.Contexts
                                  autoAck: false,
                                  consumer: consumer, consumerTag: "harvester");
             _logger.LogInformation("Started, waiting for a new import");
-            return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
@@ -94,9 +120,9 @@ namespace komikaan.Harvester.Contexts
 
         private async Task ProcessMessageAsync(SupplierConfiguration item)
         {
-            _logger.LogInformation("Starting an import for {name}", item.Name);
-            using (_logger.BeginScope(item.Name))
+            using (_logger.BeginScope("{name} - {import}", item.Name, item.ImportId))
             {
+                _logger.LogInformation("Starting an import", item.Name);
                 await _harvestingManager.Harvest(item);
             }
         }

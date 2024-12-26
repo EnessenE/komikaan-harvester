@@ -117,15 +117,20 @@ namespace komikaan.Harvester.Managers
             _logger.LogInformation("Split into {c} chunks of {amountPerChunk}", chunks.Count(), amountPerChunk);
             var tasks = new List<Task>();
             var totalUnknown = 0;
+            var chunk = 0;
             foreach (var stops in chunks)
             {
-                var task = new Task(async () =>
+                chunk += 1;
+                using (_logger.BeginScope(chunk))
                 {
-                    var data = await DetectStopsType(feed, config, mappings, stops);
-                    Interlocked.Increment(ref totalUnknown);
-                });
-                task.Start();
-                tasks.Add(task);
+                    var task = new Task(async () =>
+                    {
+                        var data = await DetectStopsType(feed, config, mappings, stops);
+                        Interlocked.Increment(ref totalUnknown);
+                    });
+                    task.Start();
+                    tasks.Add(task);
+                }
             }
             Task.WaitAll(tasks.ToArray());
             _logger.LogInformation("Total unknown stops: {total}", totalUnknown);
@@ -138,7 +143,7 @@ namespace komikaan.Harvester.Managers
             int totalUnknown = 0;
             foreach (var stop in stops)
             {
-                iteration = iteration + 1;
+                iteration += 1;
                 if (iteration % 100 == 0 && iteration != 0)
                 {
                     _logger.LogInformation("{it}/{total} stop types", iteration, stops.Count());
