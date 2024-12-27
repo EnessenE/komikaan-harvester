@@ -1,8 +1,8 @@
 ﻿using GTFS.Entities;
 
-namespace komikaan.Harvester.Contexts
+namespace komikaan.Harvester.Contexts.ORM
 {
-    internal class PsqlShape: Shape
+    internal class PsqlShape : Shape
     {
         public PsqlShape() { }
 
@@ -17,8 +17,8 @@ namespace komikaan.Harvester.Contexts
 
         public double SequenceData
         {
-            get => (double)base.Sequence;
-            set => base.Sequence = (uint)value;
+            get => Sequence;
+            set => Sequence = (uint)value;
         }
     }
 }

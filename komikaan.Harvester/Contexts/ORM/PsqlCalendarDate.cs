@@ -2,7 +2,7 @@
 using GTFS.Entities.Enumerations;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
-namespace komikaan.Harvester.Contexts
+namespace komikaan.Harvester.Contexts.ORM
 {
     public class PsqlCalendarDate : CalendarDate
     {
@@ -18,8 +18,8 @@ namespace komikaan.Harvester.Contexts
         // Enum mapping for ExceptionType (assuming it's an integer representation of the enum)
         public int ExceptionTypeData
         {
-            get => (int)base.ExceptionType;
-            set => base.ExceptionType = (ExceptionType)value;
+            get => (int)ExceptionType;
+            set => ExceptionType = (ExceptionType)value;
         }
     }
 }
