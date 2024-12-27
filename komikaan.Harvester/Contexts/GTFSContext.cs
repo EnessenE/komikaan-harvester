@@ -2,6 +2,7 @@
 using Npgsql;
 using Route = GTFS.Entities.Route;
 using System.Diagnostics;
+using komikaan.Harvester.Contexts.ORM;
 
 namespace komikaan.Harvester.Contexts;
 

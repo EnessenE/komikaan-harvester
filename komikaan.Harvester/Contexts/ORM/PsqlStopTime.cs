@@ -1,7 +1,7 @@
 ﻿using GTFS.Entities.Enumerations;
 using StopTime = GTFS.Entities.StopTime;
 
-namespace komikaan.Harvester.Contexts
+namespace komikaan.Harvester.Contexts.ORM
 {
     internal class PsqlStopTime : StopTime
     {
@@ -24,26 +24,26 @@ namespace komikaan.Harvester.Contexts
 
         public double StopSequenceData
         {
-            get => (double)base.StopSequence;
-            set => base.StopSequence = (uint)value;
+            get => StopSequence;
+            set => StopSequence = (uint)value;
         }
 
         public int PickupTypeData
         {
-            get => (int)base.PickupType.GetValueOrDefault();
-            set => base.PickupType = (PickupType)value;
+            get => (int)PickupType.GetValueOrDefault();
+            set => PickupType = (PickupType)value;
         }
 
         public int DropOffTypeData
         {
-            get => (int)base.DropOffType.GetValueOrDefault();
-            set => base.DropOffType = (DropOffType)value;
+            get => (int)DropOffType.GetValueOrDefault();
+            set => DropOffType = (DropOffType)value;
         }
 
         public int TimepointTypeData
         {
-            get => (int)base.TimepointType;
-            set => base.TimepointType = (TimePointType)value;
+            get => (int)TimepointType;
+            set => TimepointType = (TimePointType)value;
         }
     }
 }
