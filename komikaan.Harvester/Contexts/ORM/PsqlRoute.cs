@@ -1,7 +1,7 @@
 ﻿using GTFS.Entities.Enumerations;
 using Route = GTFS.Entities.Route;
 
-namespace komikaan.Harvester.Contexts
+namespace komikaan.Harvester.Contexts.ORM
 {
     internal class PsqlRoute : Route
     {
@@ -22,6 +22,6 @@ namespace komikaan.Harvester.Contexts
             TextColor = item.TextColor;
         }
 
-        public int RouteType { get => (int)base.Type; set => base.Type = (RouteTypeExtended)value; }
+        public int RouteType { get => (int)Type; set => Type = (RouteTypeExtended)value; }
     }
 }

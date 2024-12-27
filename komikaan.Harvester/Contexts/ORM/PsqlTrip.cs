@@ -1,7 +1,7 @@
 ﻿using GTFS.Entities;
 using GTFS.Entities.Enumerations;
 
-namespace komikaan.Harvester.Contexts
+namespace komikaan.Harvester.Contexts.ORM
 {
     internal class PsqlTrip : Trip
     {
@@ -26,15 +26,15 @@ namespace komikaan.Harvester.Contexts
         // Mapping for DirectionType enum (e.g., 0 = North, 1 = South)
         public int DirectionType
         {
-            get => (int)(base.Direction ?? GTFS.Entities.Enumerations.DirectionType.OneDirection); // Default to 'Unknown' if null
-            set => base.Direction = (DirectionType)value;
+            get => (int)(Direction ?? GTFS.Entities.Enumerations.DirectionType.OneDirection); // Default to 'Unknown' if null
+            set => Direction = (DirectionType)value;
         }
 
         // Mapping for WheelchairAccessibilityType enum (e.g., 0 = Unknown, 1 = Accessible, 2 = Not Accessible)
         public int AccessibilityTypeData
         {
-            get => (int)(base.AccessibilityType ?? WheelchairAccessibilityType.NoInformation); // Default to 'Unknown' if null
-            set => base.AccessibilityType = (WheelchairAccessibilityType)value;
+            get => (int)(AccessibilityType ?? WheelchairAccessibilityType.NoInformation); // Default to 'Unknown' if null
+            set => AccessibilityType = (WheelchairAccessibilityType)value;
         }
     }
 }
