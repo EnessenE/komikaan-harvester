@@ -35,13 +35,12 @@ internal class GTFSContext
     }
 
 
-    private async Task UpsertEntityAsync<T>(string procedureName, string tvpTypeName, IEnumerable<T> entities)
+    private async Task UpsertEntityAsync<T>(string procedureName, string tvpTypeName, IEnumerable<T> entities, int batchSize)
     {
         var stopwatch = Stopwatch.StartNew();
-        var size = 100000;
         _logger.LogInformation("Importing to {procedure}", procedureName);
-        var chunks = entities.Chunk(size);
-        _logger.LogInformation("Split into {amount} of chunks of {size}", chunks.Count(), size);
+        var chunks = entities.Chunk(batchSize);
+        _logger.LogInformation("Split into {amount} of chunks of {size}", chunks.Count(), batchSize);
         var totalGrabbed = 0;
 
         foreach (var chunk in chunks)
@@ -72,7 +71,7 @@ internal class GTFSContext
     {
         const string procedureName = "public.upsert_agencies";
         const string tvpTypeName = "public.agencies_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, agencies);
+        await UpsertEntityAsync(procedureName, tvpTypeName, agencies, 100);
     }
 
     // Bulk upsert for routes
@@ -80,14 +79,14 @@ internal class GTFSContext
     {
         const string procedureName = "public.upsert_routes";
         const string tvpTypeName = "public.routes_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(routes));
+        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(routes), 5000);
     }
 
     public async Task UpsertCalendarsAsync(IEnumerable<Calendar> calenders)
     {
         const string procedureName = "public.upsert_calenders";
         const string tvpTypeName = "public.calenders_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, calenders);
+        await UpsertEntityAsync(procedureName, tvpTypeName, calenders, 5000);
     }
 
     // Bulk upsert for stops
@@ -95,7 +94,7 @@ internal class GTFSContext
     {
         const string procedureName = "public.upsert_stops";
         const string tvpTypeName = "public.stops_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(stops));
+        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(stops), 1000);
     }
 
     // Bulk upsert for trips
@@ -103,7 +102,7 @@ internal class GTFSContext
     {
         const string procedureName = "public.upsert_trips";
         const string tvpTypeName = "public.trips_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(trips));
+        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(trips), 1000);
     }
 
     // Bulk upsert for calendar dates
@@ -111,7 +110,7 @@ internal class GTFSContext
     {
         const string procedureName = "public.upsert_calendar_dates";
         const string tvpTypeName = "public.calendar_dates_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(calendarDates));
+        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(calendarDates), 5000);
     }
 
     // Bulk upsert for frequencies
@@ -119,7 +118,7 @@ internal class GTFSContext
     {
         const string procedureName = "public.upsert_frequencies";
         const string tvpTypeName = "public.frequencies_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, frequencies);
+        await UpsertEntityAsync(procedureName, tvpTypeName, frequencies, 5000);
     }
 
     // Bulk upsert for stop times
@@ -127,7 +126,7 @@ internal class GTFSContext
     {
         const string procedureName = "public.upsert_stop_times";
         const string tvpTypeName = "public.stop_times_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(stopTimes));
+        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(stopTimes), 1000);
     }
 
     // Bulk upsert for shapes
@@ -135,7 +134,7 @@ internal class GTFSContext
     {
         const string procedureName = "public.upsert_shapes";
         const string tvpTypeName = "public.shapes_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(shapes));
+        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(shapes), 1000);
     }
 
 
