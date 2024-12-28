@@ -127,7 +127,7 @@ internal class GTFSContext
     {
         const string procedureName = "public.upsert_stop_times";
         const string tvpTypeName = "public.stop_times_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(stopTimes), 1000);
+        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(stopTimes), 10000);
     }
 
     // Bulk upsert for shapes
