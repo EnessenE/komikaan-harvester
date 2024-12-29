@@ -95,16 +95,4 @@ internal class PostgresContext : IDataContext
 
         _logger.LogInformation("Done with import.");
     }
-
-    private async Task BulkCopyAsync<T>(NpgsqlConnection connection, string tableName, IEnumerable<T> data)
-    {
-        using var writer = connection.BeginBinaryImport($"COPY {tableName} FROM STDIN (FORMAT BINARY)");
-        foreach (var item in data)
-        {
-            writer.StartRow();
-            // Write fields for item
-            // Example: writer.Write(item.Property, NpgsqlTypes.NpgsqlDbType.Text);
-        }
-        await writer.CompleteAsync();
-    }
 }

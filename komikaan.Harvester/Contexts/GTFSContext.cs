@@ -45,6 +45,7 @@ internal class GTFSContext
 
         foreach (var chunk in chunks)
         {
+            var chunkWatch = Stopwatch.StartNew();
             totalGrabbed += 1;
             _logger.LogInformation("Working on {grab}/{total} for {procedureName}", totalGrabbed, chunks.Count(), procedureName);
 
@@ -59,7 +60,7 @@ internal class GTFSContext
 
                 await command.ExecuteNonQueryAsync();
             }
-            _logger.LogInformation("Inserted on {grab}/{total} for {procedureName}", totalGrabbed, chunks.Count(), procedureName);
+            _logger.LogInformation("Inserted on {grab}/{total} for {procedureName} in {time}", totalGrabbed, chunks.Count(), procedureName, chunkWatch.Elapsed);
         }
 
         _logger.LogInformation("Finished importing to {procedure} in {time}", procedureName, stopwatch.Elapsed);
