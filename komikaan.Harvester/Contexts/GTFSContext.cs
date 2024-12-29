@@ -112,7 +112,7 @@ internal class GTFSContext
     {
         const string procedureName = "public.upsert_calendar_dates";
         const string tvpTypeName = "public.calendar_dates_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(calendarDates), 5000);
+        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(calendarDates), 100000);
     }
 
     // Bulk upsert for frequencies
