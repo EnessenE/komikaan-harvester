@@ -44,7 +44,7 @@ internal class GTFSContext
             
             using (var connection = _dataSource.CreateConnection())
             {
-                var query = $"CREATE TABLE IF NOT EXISTS public.stop_times2_{item.DataOrigin.ToString().Replace("-", "_").Replace(" ", "_")}_{item.ImportId.Value.ToString().Replace("-", "_")} PARTITION OF public.stop_times2\n";
+                var query = $"CREATE TABLE IF NOT EXISTS public.stop_times2_{item.DataOrigin.ToString().Replace("-", "_").Replace(" ", "_").Replace(".", "_")}_{item.ImportId.Value.ToString().Replace("-", "_")} PARTITION OF public.stop_times2\n";
                 query += $"FOR VALUES FROM ('{item.DataOrigin}', '{item.ImportId.Value}')\n";
                 query += $"TO ('{item.DataOrigin}', '{item.ImportId.Value.Increment()}')\n";
 
@@ -99,9 +99,9 @@ BEGIN
         SELECT tablename
         FROM pg_tables
         WHERE schemaname = 'public'  -- or your schema name if different
-		AND tablename LIKE 'stop_times2_{item.DataOrigin.ToString().Replace("-", "_").Replace(" ", "_")}_%'
+		AND tablename LIKE 'stop_times2_{item.DataOrigin.ToString().Replace("-", "_").Replace(" ", "_").Replace(".", "_")}_%'
 		AND tablename NOT LIKE 'stop_times2_default'
-        AND tablename NOT LIKE 'stop_times2_{item.DataOrigin.ToString().Replace("-", "_").Replace(" ", "_").Replace(" ", "_")}_{item.ImportId.Value.ToString().Replace("-", "_")}'
+        AND tablename NOT LIKE 'stop_times2_{item.DataOrigin.ToString().Replace("-", "_").Replace(" ", "_").Replace(".", "_")}_{item.ImportId.Value.ToString().Replace("-", "_")}'
     LOOP
         -- Dynamically drop each partition
         EXECUTE 'DROP TABLE IF EXISTS public.' || partition.tablename;
