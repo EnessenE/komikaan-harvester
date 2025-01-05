@@ -35,8 +35,26 @@ internal class GTFSContext
     }
 
 
-    private async Task UpsertEntityAsync<T>(string procedureName, string tvpTypeName, IEnumerable<T> entities, int batchSize)
+    private async Task UpsertEntityAsync<T>(string procedureName, string tvpTypeName, IEnumerable<T> entities, int batchSize, bool partioned) where T : GTFSEntity
     {
+        if (partioned)
+        {
+            _logger.LogInformation("Creating a partition");
+            var item = entities.First();
+            
+            using (var connection = _dataSource.CreateConnection())
+            {
+                var query = $"CREATE TABLE IF NOT EXISTS public.stop_times2_{item.DataOrigin.ToString().Replace("-", "_")}_{item.ImportId.Value.ToString().Replace("-", "_")} PARTITION OF public.stop_times2\n";
+                query += $"FOR VALUES FROM ('{item.DataOrigin}', '{item.ImportId.Value}')\n";
+                query += $"TO ('{item.DataOrigin}', '{item.ImportId.Value.Increment()}')\n";
+
+                _logger.LogInformation("Generated query: {query}", query);
+                var command = new NpgsqlCommand(query, connection);
+                await connection.OpenAsync();
+
+                await command.ExecuteNonQueryAsync();
+            }
+        }
         var stopwatch = Stopwatch.StartNew();
         _logger.LogInformation("Importing to {procedure}", procedureName);
         var chunks = entities.Chunk(batchSize);
@@ -63,6 +81,41 @@ internal class GTFSContext
             _logger.LogInformation("Inserted on {grab}/{total} for {procedureName} in {time}", totalGrabbed, chunks.Count(), procedureName, chunkWatch.Elapsed);
         }
 
+
+        if (partioned)
+        {
+            _logger.LogInformation("Deleting irrelevant partitions");
+
+            var item = entities.First();
+
+            using (var connection = _dataSource.CreateConnection())
+            {
+                var query = $@"DO $$ 
+DECLARE
+    partition RECORD;
+BEGIN
+    -- Loop through all partitions of the stop_times2 table
+    FOR partition IN 
+        SELECT tablename
+        FROM pg_tables
+        WHERE schemaname = 'public'  -- or your schema name if different
+		AND tablename LIKE 'stop_times2_{item.DataOrigin.ToString().Replace("-", "_")}_%'
+		AND tablename NOT LIKE 'stop_times2_default'
+        AND tablename NOT LIKE 'stop_times2_{item.DataOrigin.ToString().Replace("-", "_")}_{item.ImportId.Value.ToString().Replace("-", "_")}'
+    LOOP
+        -- Dynamically drop each partition
+        EXECUTE 'DROP TABLE IF EXISTS public.' || partition.tablename;
+    END LOOP;
+END $$;";
+
+                _logger.LogInformation("Generated query: {query}", query);
+                var command = new NpgsqlCommand(query, connection);
+                await connection.OpenAsync();
+
+                await command.ExecuteNonQueryAsync();
+            }
+
+        }
         _logger.LogInformation("Finished importing to {procedure} in {time}", procedureName, stopwatch.Elapsed);
     }
 
@@ -71,72 +124,107 @@ internal class GTFSContext
     // Bulk upsert for agencies
     public async Task UpsertAgenciesAsync(IEnumerable<Agency> agencies)
     {
-        const string procedureName = "public.upsert_agencies";
-        const string tvpTypeName = "public.agencies_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, agencies, 100);
+        if (agencies.Any())
+        {
+            const string procedureName = "public.upsert_agencies";
+            const string tvpTypeName = "public.agencies_type";
+            var item = agencies.First();
+            await UpsertEntityAsync(procedureName, tvpTypeName, agencies, 100, false);
+        }
     }
 
     // Bulk upsert for routes
     public async Task UpsertRoutesAsync(IEnumerable<Route> routes)
     {
-        const string procedureName = "public.upsert_routes";
-        const string tvpTypeName = "public.routes_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(routes), 5000);
+        if (routes.Any())
+        {
+            const string procedureName = "public.upsert_routes";
+            const string tvpTypeName = "public.routes_type";
+            var item = routes.First();
+            await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(routes), 5000, false);
+        }
     }
 
     public async Task UpsertCalendarsAsync(IEnumerable<Calendar> calenders)
     {
-        const string procedureName = "public.upsert_calenders";
-        const string tvpTypeName = "public.calenders_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, calenders, 5000);
+        if (calenders.Any())
+        {
+            const string procedureName = "public.upsert_calenders";
+            const string tvpTypeName = "public.calenders_type";
+            var item = calenders.First();
+            await UpsertEntityAsync(procedureName, tvpTypeName, calenders, 5000, false);
+        }
     }
 
     // Bulk upsert for stops
     public async Task UpsertStopsAsync(IEnumerable<Stop> stops)
     {
-        const string procedureName = "public.upsert_stops";
-        const string tvpTypeName = "public.stops_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(stops), 1000);
+        if (stops.Any())
+        {
+            const string procedureName = "public.upsert_stops";
+            const string tvpTypeName = "public.stops_type";
+            var item = stops.First();
+            await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(stops), 1000, false);
+        }
     }
 
     // Bulk upsert for trips
     public async Task UpsertTripsAsync(IEnumerable<Trip> trips)
     {
-        const string procedureName = "public.upsert_trips";
-        const string tvpTypeName = "public.trips_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(trips), 100000);
+        if (trips.Any())
+        {
+            const string procedureName = "public.upsert_trips";
+            const string tvpTypeName = "public.trips_type";
+            var item = trips.First();
+            await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(trips), 10000, false);
+        }
     }
 
     // Bulk upsert for calendar dates
     public async Task UpsertCalendarDatesAsync(IEnumerable<CalendarDate> calendarDates)
     {
-        const string procedureName = "public.upsert_calendar_dates";
-        const string tvpTypeName = "public.calendar_dates_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(calendarDates), 100000);
+        if (calendarDates.Any())
+        {
+            const string procedureName = "public.upsert_calendar_dates";
+            const string tvpTypeName = "public.calendar_dates_type";
+            var item = calendarDates.First();
+            await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(calendarDates), 100000, false);
+        }
     }
 
     // Bulk upsert for frequencies
     public async Task UpsertFrequenciesAsync(IEnumerable<Frequency> frequencies)
     {
-        const string procedureName = "public.upsert_frequencies";
-        const string tvpTypeName = "public.frequencies_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, frequencies, 5000);
+        if (frequencies.Any())
+        {
+            const string procedureName = "public.upsert_frequencies";
+            const string tvpTypeName = "public.frequencies_type";
+            var item = frequencies.First();
+            await UpsertEntityAsync(procedureName, tvpTypeName, frequencies, 5000, false);
+        }
     }
 
     // Bulk upsert for stop times
     public async Task UpsertStopTimesAsync(IEnumerable<StopTime> stopTimes)
     {
-        const string procedureName = "public.upsert_stop_times";
-        const string tvpTypeName = "public.stop_times_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(stopTimes), 100000);
+        if (stopTimes.Any())
+        {
+            var item = stopTimes.First();
+            await UpsertEntityAsync("public.upsert_stop_times2", "public.stop_times_type", ToPsql(stopTimes), 100000, true);
+            await UpsertEntityAsync("public.upsert_stop_times", "public.stop_times_type", ToPsql(stopTimes), 100000, false);
+        }
     }
 
     // Bulk upsert for shapes
     public async Task UpsertShapesAsync(IEnumerable<Shape> shapes)
     {
-        const string procedureName = "public.upsert_shapes";
-        const string tvpTypeName = "public.shapes_type";
-        await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(shapes), 100000);
+        if (shapes.Any())
+        {
+            const string procedureName = "public.upsert_shapes";
+            const string tvpTypeName = "public.shapes_type";
+            var item = shapes.First();
+            await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(shapes), 100000, false);
+        }
     }
 
 
@@ -194,4 +282,22 @@ internal class GTFSContext
         }
     }
 
+}
+//dumb test delete thanks, make proper partitions idiot
+static class GuidExtensions
+{
+    private static readonly int[] _guidByteOrder =
+        new[] { 15, 14, 13, 12, 11, 10, 9, 8, 6, 7, 4, 5, 0, 1, 2, 3 };
+    public static Guid Increment(this Guid guid)
+    {
+        var bytes = guid.ToByteArray();
+        bool carry = true;
+        for (int i = 0; i < _guidByteOrder.Length && carry; i++)
+        {
+            int index = _guidByteOrder[i];
+            byte oldValue = bytes[index]++;
+            carry = oldValue > bytes[index];
+        }
+        return new Guid(bytes);
+    }
 }
