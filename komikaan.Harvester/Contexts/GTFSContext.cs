@@ -106,7 +106,7 @@ BEGIN
         -- Dynamically drop each partition
         EXECUTE 'DROP TABLE IF EXISTS public.' || partition.tablename;
     END LOOP;
-END $$;";
+END $$;".ToLowerInvariant(); ;
 
                 _logger.LogInformation("Generated query: {query}", query);
                 var command = new NpgsqlCommand(query, connection);
@@ -211,7 +211,7 @@ END $$;";
         {
             var item = stopTimes.First();
             await UpsertEntityAsync("public.upsert_stop_times2", "public.stop_times_type", ToPsql(stopTimes), 100000, true);
-            await UpsertEntityAsync("public.upsert_stop_times", "public.stop_times_type", ToPsql(stopTimes), 100000, false);
+            //await UpsertEntityAsync("public.upsert_stop_times", "public.stop_times_type", ToPsql(stopTimes), 100000, false);
         }
     }
 
