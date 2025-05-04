@@ -156,9 +156,9 @@ namespace komikaan.Harvester.Managers
                         var stopwatch = Stopwatch.StartNew();
                         var relatedTimes = feed.Stop_StopTimes[stop.Id.ToLowerInvariant()].Take(1);
                         // _logger.LogInformation("Got {x} times, {time}", relatedTimes.Count, stopwatch.ElapsedMilliseconds);
-                        var relatedTrips = feed.StopTime_Trips[relatedTimes.First().TripId.ToLowerInvariant()];
+                        var relatedTrips = feed.StopTime_Trips[relatedTimes.First().TripId.ToLowerInvariant()].Take(3);
                         // _logger.LogInformation("Got {x} relatedTrips, {time}", relatedTrips.Count, stopwatch.ElapsedMilliseconds);
-                        var relatedRoutes = feed.Routes.Where(route => relatedTrips.Any(x => x.RouteId.Equals(route.Id))).Take(5);
+                        var relatedRoutes = feed.Routes.Where(route => relatedTrips.Any(x => x.RouteId.Equals(route.Id))).Take(100);
                         // _logger.LogInformation("Got {x} relatedRoutes, {time}", relatedRoutes.Count, stopwatch.ElapsedMilliseconds);
                         var routeTypes = relatedRoutes.Select(route => route.Type).ToList();
                         // _logger.LogInformation("Got {x} routeTypes, {time}", routeTypes.Count, stopwatch.ElapsedMilliseconds);
