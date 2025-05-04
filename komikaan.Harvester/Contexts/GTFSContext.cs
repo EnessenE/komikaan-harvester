@@ -61,7 +61,7 @@ internal class GTFSContext
         _logger.LogInformation("Split into {amount} of chunks of {size}", chunks.Count(), batchSize);
         var totalGrabbed = 0;
 
-        foreach (var chunk in chunks)
+        foreach (var chunk in chunks.ToList())
         {
             var chunkWatch = Stopwatch.StartNew();
             totalGrabbed += 1;
@@ -98,7 +98,7 @@ BEGIN
     FOR partition IN 
         SELECT tablename
         FROM pg_tables
-        WHERE schemaname = 'public'  -- or your schema name if different
+        WHERE schemaname = 'public'
 		AND tablename LIKE 'stop_times2_{item.DataOrigin.ToString().Replace("-", "_").Replace(" ", "_").Replace(".", "_")}_%'
 		AND tablename NOT LIKE 'stop_times2_default'
         AND tablename NOT LIKE 'stop_times2_{item.DataOrigin.ToString().Replace("-", "_").Replace(" ", "_").Replace(".", "_")}_{item.ImportId.Value.ToString().Replace("-", "_")}'
