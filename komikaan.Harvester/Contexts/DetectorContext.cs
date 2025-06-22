@@ -1,5 +1,6 @@
 ﻿using JNogueira.Discord.WebhookClient;
 using komikaan.Common.Models;
+using komikaan.Harvester.Interfaces;
 using komikaan.Harvester.Managers;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -14,14 +15,16 @@ namespace komikaan.Harvester.Contexts
         private readonly HarvestingManager _harvestingManager;
         private readonly DiscordWebhookClient _discordWebHookClient;
         private IModel _channel;
+        private IDataContext _dataContext;
         private readonly IConfiguration _configuration;
 
-        public DetectorContext(ILogger<DetectorContext> logger, HarvestingManager harvestingManager, DiscordWebhookClient discordWebHookClient, IConfiguration configuration)
+        public DetectorContext(ILogger<DetectorContext> logger, HarvestingManager harvestingManager, DiscordWebhookClient discordWebHookClient, IConfiguration configuration, IDataContext dataContext)
         {
             _logger = logger;
             _harvestingManager = harvestingManager;
             _discordWebHookClient = discordWebHookClient;
             _configuration = configuration;
+            _dataContext = dataContext;
         }
 
 
@@ -123,6 +126,8 @@ namespace komikaan.Harvester.Contexts
             using (_logger.BeginScope("{name} - {import}", item.Name, item.ImportId))
             {
                 _logger.LogInformation("Starting an import", item.Name);
+                await _dataContext.MarkStartImportAsync(item);
+                await _dataContext.UpdateImportStatusAsync(item, "Started");
                 await _harvestingManager.Harvest(item);
             }
         }

@@ -82,7 +82,7 @@ namespace komikaan.Harvester.Managers
                 await _dataContext.DeleteOldDataAsync(config);
                 _logger.LogInformation("Old data cleanup");
                 await SendMessageAsync(config, "Cleaning old stops");
-                await _dataContext.CleanOldStopData(config);
+                await _dataContext.CleanOldStopDataAsync(config);
                 await MarkAsFinished(config, true);
                 _logger.LogInformation("Finished import in {time}", stopwatch.Elapsed.ToString("g"));
                 await SendMessageAsync(config, "Finished import in " + stopwatch.Elapsed.ToString("g"));
@@ -95,6 +95,7 @@ namespace komikaan.Harvester.Managers
                 _logger.LogError(error, "Following error:");
                 await MarkAsFinished(config, false);
                 _logger.LogInformation("Marked as failed!");
+                await _dataContext.UpdateImportStatusAsync(config, "Feed import failed");
             }
             finally
             {
@@ -108,7 +109,7 @@ namespace komikaan.Harvester.Managers
         {
             config.LastUpdated = DateTimeOffset.UtcNow;
             config.DownloadPending = false;
-            await _dataContext.MarkDownload(config, success);
+            await _dataContext.MarkDownloadAsync(config, success);
         }
 
         private async Task AdjustFeedAsync(GTFSFeed feed, SupplierConfiguration config, List<SupplierTypeMapping> mappings)

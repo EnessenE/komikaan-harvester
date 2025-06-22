@@ -1,75 +1,32 @@
 ﻿using CsvHelper;
 using CsvHelper.Configuration;
-using CsvHelper.TypeConversion;
 using JNogueira.Discord.WebhookClient;
 using komikaan.Common.Models;
 using komikaan.GTFS.Models.Static.Models;
+using komikaan.Harvester.Contexts;
+using komikaan.Harvester.Interfaces;
 using RestSharp;
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;
-using System.Reflection;
 namespace komikaan.Harvester.Suppliers;
 
 
-
-public class GtfsTimeConverter : ITypeConverter
-{
-    public object ConvertFromString(string text, IReaderRow row, MemberMapData memberMapData)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            // Return default TimeSpan (00:00:00) if the field is empty.
-            // Or throw an exception if time is always required.
-            return default(TimeSpan);
-        }
-
-        var parts = text.Split(':');
-        if (parts.Length != 3)
-        {
-            throw new TypeConverterException(this, memberMapData, text, row.Context, "Invalid time format. Expected HH:mm:ss.");
-        }
-
-        try
-        {
-            int hours = int.Parse(parts[0], CultureInfo.InvariantCulture);
-            int minutes = int.Parse(parts[1], CultureInfo.InvariantCulture);
-            int seconds = int.Parse(parts[2], CultureInfo.InvariantCulture);
-
-            return new TimeSpan(hours, minutes, seconds);
-        }
-        catch (Exception ex)
-        {
-            throw new TypeConverterException(this, memberMapData, text, row.Context, "Error converting GTFS time.", ex);
-        }
-    }
-
-    public string ConvertToString(object value, IWriterRow row, MemberMapData memberMapData)
-    {
-        if (value is TimeSpan ts)
-        {
-            // Format back to HH:mm:ss, ensuring hours includes the total hours.
-            return $"{(int)ts.TotalHours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}";
-        }
-        return string.Empty;
-    }
-}
-
-
-public partial class GenericGTFSSupplier
+public class GenericGTFSSupplier
 {
     private readonly DiscordWebhookClient _discordWebHookClient;
     private ILogger<GenericGTFSSupplier> _logger;
     private static DirectoryInfo _rawPath;
     private static DirectoryInfo _dataPath;
+    private IDataContext _dataContext;
+    private GTFSContext _gtfsContext;
 
-    private Dictionary<string, Type> _filesToDetect = new Dictionary<string, Type>();
-
-    public GenericGTFSSupplier(DiscordWebhookClient discordWebhookClient, ILogger<GenericGTFSSupplier> logger)
+    public GenericGTFSSupplier(DiscordWebhookClient discordWebhookClient, ILogger<GenericGTFSSupplier> logger, IDataContext dataContext, GTFSContext gtfsContext)
     {
         _discordWebHookClient = discordWebhookClient;
         _logger = logger;
+        _dataContext = dataContext;
+        _gtfsContext = gtfsContext;
     }
 
     public class AgencyMap : ClassMap<Agency>{
@@ -101,11 +58,14 @@ public partial class GenericGTFSSupplier
 
     public async Task<GTFSFeed> RetrieveFeed(SupplierConfiguration supplierConfig)
     {
+        await _dataContext.UpdateImportStatusAsync(supplierConfig, "Clearing directories");
         CreateClearDirectories();
 
         await DownloadFeed(supplierConfig);
 
+        await _dataContext.UpdateImportStatusAsync(supplierConfig, "Extracting files");
         ZipFile.ExtractToDirectory(_rawPath.GetFiles().First().FullName, _dataPath.FullName);
+        await _dataContext.UpdateImportStatusAsync(supplierConfig, "Extracting complete, starting reading");
         var config = new CsvConfiguration(CultureInfo.InvariantCulture)
         {
             CacheFields = true,
@@ -113,27 +73,31 @@ public partial class GenericGTFSSupplier
             MissingFieldFound = null,
         };
 
-
-
-
         var feed = new GTFSFeed();
         await SendMessageAsync("Started reading GTFS file", supplierConfig);
+        await _dataContext.UpdateImportStatusAsync(supplierConfig, "Extracting complete");
 
         using (var reader = new StreamReader($@"{_dataPath.FullName}\agency.txt"))
-        using (var csv = new CsvReader(reader, config))
         {
-            csv.Context.RegisterClassMap<AgencyMap>();
-            var records = csv.GetRecords<Agency>();
-            feed.Agencies = records.ToList();
+            await _dataContext.UpdateImportStatusAsync(supplierConfig, "Importing agency.txt");
+            using (var csv = new CsvReader(reader, config))
+            {
+                csv.Context.RegisterClassMap<AgencyMap>();
+                var records = csv.GetRecords<Agency>();
+                await _gtfsContext.UpsertAgenciesAsync(supplierConfig, records);
+            }
         }
         _logger.LogInformation("Started loading stoptimes");
         var stopwatch = Stopwatch.StartNew();
         using (var reader = new StreamReader($@"{_dataPath.FullName}\stop_times.txt"))
-        using (var csv = new CsvReader(reader, config))
         {
-            csv.Context.RegisterClassMap<StopTimeMap>();
-            var records = csv.GetRecords<StopTime>();
-            feed.StopTimes = records.ToList();
+            await _dataContext.UpdateImportStatusAsync(supplierConfig, "Importing stop_times.txt");
+            using (var csv = new CsvReader(reader, config))
+            {
+                csv.Context.RegisterClassMap<StopTimeMap>();
+                var records = csv.GetRecords<StopTime>();
+                feed.StopTimes = records.ToList();
+            }
         }
         _logger.LogInformation("Finished loading {total} stoptimes in {elapsed}", feed.StopTimes.Count, stopwatch.Elapsed);
 
@@ -147,11 +111,7 @@ public partial class GenericGTFSSupplier
 
         //await SendMessageAsync("Started data adjustment stops", supplierConfig);
         //await ChunkMapStopsAsync(feed);
-        foreach (var agency in feed.Agencies)
-        {
-            _logger.LogInformation("An agency found in this data supplier: {0}", agency.AgencyName);
-        }
-        _logger.LogInformation($"Found a feed with {feed.Agencies.Count} agencies");
+        _logger.LogInformation($"Found a feed with {feed.Agencies?.Count} agencies");
         return feed;
     }
 
@@ -186,6 +146,7 @@ public partial class GenericGTFSSupplier
     {
         if (supplier.RetrievalType == RetrievalType.REST)
         {
+            await _dataContext.UpdateImportStatusAsync(supplier, "Downloading feed");
             var options = new RestClientOptions(supplier.Url);
             var client = new RestClient(options);
             options.UserAgent = $"harvester/komikaan.nl/{GetType().Assembly.GetName().Version} (enes@reasulus.nl)";
@@ -195,9 +156,11 @@ public partial class GenericGTFSSupplier
             // The cancellation token comes from the caller. You can still make a call without it.
             var response = await client.DownloadDataAsync(request);
             await File.WriteAllBytesAsync(_rawPath+@"\gtfs_file.zip", response);
+            await _dataContext.UpdateImportStatusAsync(supplier, "Feed download complete feed");
         }
         else if (supplier.RetrievalType == RetrievalType.LOCAL)
         {
+            await _dataContext.UpdateImportStatusAsync(supplier, "Copying feed");
             File.Copy(supplier.Url, _rawPath + @"\gtfs_file.zip");
         }
         else

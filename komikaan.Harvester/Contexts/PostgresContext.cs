@@ -21,12 +21,42 @@ internal class PostgresContext : IDataContext
 
     }
 
-    public async Task MarkDownload(SupplierConfiguration config, bool success)
+    public async Task MarkStartImportAsync(SupplierConfiguration config)
     {
         using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
 
         await dbConnection.ExecuteAsync(
-         @"CALL public.update_supplier_for_download(@target, @last_update, @successfullyDownloaded)",
+         @"CALL public.harvester_mark_import_start(@data_origin)",
+        new
+        {
+            data_origin = config.Name,
+        },
+             commandType: CommandType.Text
+         );
+    }
+
+    public async Task UpdateImportStatusAsync(SupplierConfiguration config, string importStatus)
+    {
+        using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
+
+        await dbConnection.ExecuteAsync(
+         @"CALL public.harvester_update_status(@data_origin, @state)",
+        new
+        {
+            data_origin = config.Name,
+            state = importStatus,
+
+        },
+             commandType: CommandType.Text
+         );
+    }
+
+    public async Task MarkDownloadAsync(SupplierConfiguration config, bool success)
+    {
+        using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
+
+        await dbConnection.ExecuteAsync(
+         @"CALL public.harvester_update_supplier_for_download(@target, @last_update, @successfullyDownloaded)",
         new
         {
             target = config.Name,
@@ -37,7 +67,7 @@ internal class PostgresContext : IDataContext
          );
     }
 
-    public async Task CleanOldStopData(SupplierConfiguration config)
+    public async Task CleanOldStopDataAsync(SupplierConfiguration config)
     {
         using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
 
