@@ -2,10 +2,15 @@
 
 namespace komikaan.Harvester.Suppliers;
 
-public class GTFSFeed
+public class GTFSFeed : IDisposable
 {
     public List<Agency> Agencies { get; set; }
     public List<StopTime> StopTimes { get; internal set; }
     public List<Trip> Trips { get; internal set; }
     public IEnumerable<Stop> Stops { get; internal set; }
+
+    public void Dispose()
+    {
+        StopTimes.Clear();
+    }
 }

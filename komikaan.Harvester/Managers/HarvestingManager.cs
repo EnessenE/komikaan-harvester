@@ -1,4 +1,8 @@
 ﻿using System.Diagnostics;
+using System.Globalization;
+using CsvHelper;
+using CsvHelper.Configuration;
+using CsvHelper.TypeConversion;
 using JNogueira.Discord.WebhookClient;
 using komikaan.Common.Models;
 using komikaan.Harvester.Interfaces;
@@ -6,6 +10,7 @@ using komikaan.Harvester.Suppliers;
 
 namespace komikaan.Harvester.Managers
 {
+
     /// <summary>
     /// Responsible for directing the import flow
     /// Calls different Suppliers and gets their data and passes it on towards our preferred shared data point
@@ -81,10 +86,11 @@ namespace komikaan.Harvester.Managers
                 await MarkAsFinished(config, true);
                 _logger.LogInformation("Finished import in {time}", stopwatch.Elapsed.ToString("g"));
                 await SendMessageAsync(config, "Finished import in " + stopwatch.Elapsed.ToString("g"));
+                feed.Dispose();
             }
             catch (Exception error)
             {
-                await SendMessageAsync(config, "Import failed! <@124928188647211009>");
+                await SendMessageAsync(config, "Import failed! <@124928188647211009> \n " + error.Message);
                 _logger.LogCritical("Failed import for {supplier}", config.Name);
                 _logger.LogError(error, "Following error:");
                 await MarkAsFinished(config, false);
@@ -93,6 +99,7 @@ namespace komikaan.Harvester.Managers
             finally
             {
                 File.Delete("\\app\\gtfs_file.zip");
+                GC.Collect();
             }
 
         }

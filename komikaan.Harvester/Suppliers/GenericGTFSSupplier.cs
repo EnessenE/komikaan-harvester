@@ -1,14 +1,61 @@
 ﻿using CsvHelper;
 using CsvHelper.Configuration;
+using CsvHelper.TypeConversion;
 using JNogueira.Discord.WebhookClient;
 using komikaan.Common.Models;
 using komikaan.GTFS.Models.Static.Models;
 using RestSharp;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;
 using System.Reflection;
 namespace komikaan.Harvester.Suppliers;
+
+
+
+public class GtfsTimeConverter : ITypeConverter
+{
+    public object ConvertFromString(string text, IReaderRow row, MemberMapData memberMapData)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            // Return default TimeSpan (00:00:00) if the field is empty.
+            // Or throw an exception if time is always required.
+            return default(TimeSpan);
+        }
+
+        var parts = text.Split(':');
+        if (parts.Length != 3)
+        {
+            throw new TypeConverterException(this, memberMapData, text, row.Context, "Invalid time format. Expected HH:mm:ss.");
+        }
+
+        try
+        {
+            int hours = int.Parse(parts[0], CultureInfo.InvariantCulture);
+            int minutes = int.Parse(parts[1], CultureInfo.InvariantCulture);
+            int seconds = int.Parse(parts[2], CultureInfo.InvariantCulture);
+
+            return new TimeSpan(hours, minutes, seconds);
+        }
+        catch (Exception ex)
+        {
+            throw new TypeConverterException(this, memberMapData, text, row.Context, "Error converting GTFS time.", ex);
+        }
+    }
+
+    public string ConvertToString(object value, IWriterRow row, MemberMapData memberMapData)
+    {
+        if (value is TimeSpan ts)
+        {
+            // Format back to HH:mm:ss, ensuring hours includes the total hours.
+            return $"{(int)ts.TotalHours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}";
+        }
+        return string.Empty;
+    }
+}
+
 
 public partial class GenericGTFSSupplier
 {
@@ -24,17 +71,49 @@ public partial class GenericGTFSSupplier
         _discordWebHookClient = discordWebhookClient;
         _logger = logger;
     }
- 
+
+    public class AgencyMap : ClassMap<Agency>{
+        public AgencyMap()
+        {
+            Map(m => m.AgencyName).Name("agency_name");
+            Map(m => m.AgencyId).Name("agency_id");
+        }
+    }
+
+    public sealed class StopTimeMap : ClassMap<StopTime>
+    {
+        public StopTimeMap()
+        {
+            Map(m => m.TripId).Name("trip_id");
+            Map(m => m.ArrivalTime).Name("arrival_time").TypeConverter<GtfsTimeConverter>();
+            Map(m => m.DepartureTime).Name("departure_time").TypeConverter<GtfsTimeConverter>();
+            Map(m => m.StopId).Name("stop_id");
+            Map(m => m.StopSequence).Name("stop_sequence");
+            Map(m => m.StopHeadsign).Name("stop_headsign");
+            Map(m => m.PickupType).Name("pickup_type");
+            Map(m => m.DropOffType).Name("drop_off_type");
+            Map(m => m.ContinuousPickup).Name("continuous_pickup");
+            Map(m => m.ContinuousDropOff).Name("continuous_drop_off");
+            Map(m => m.ShapeDistTraveled).Name("shape_dist_traveled");
+            Map(m => m.Timepoint).Name("timepoint");
+        }
+    }
+
     public async Task<GTFSFeed> RetrieveFeed(SupplierConfiguration supplierConfig)
     {
+        CreateClearDirectories();
+
         await DownloadFeed(supplierConfig);
 
-        CreateClearDirectories();
-        ZipFile.ExtractToDirectory(_dataPath.GetFiles().First().FullName, _rawPath.FullName);
+        ZipFile.ExtractToDirectory(_rawPath.GetFiles().First().FullName, _dataPath.FullName);
         var config = new CsvConfiguration(CultureInfo.InvariantCulture)
         {
             CacheFields = true,
+            HeaderValidated = null,
+            MissingFieldFound = null,
         };
+
+
 
 
         var feed = new GTFSFeed();
@@ -43,9 +122,20 @@ public partial class GenericGTFSSupplier
         using (var reader = new StreamReader($@"{_dataPath.FullName}\agency.txt"))
         using (var csv = new CsvReader(reader, config))
         {
+            csv.Context.RegisterClassMap<AgencyMap>();
             var records = csv.GetRecords<Agency>();
             feed.Agencies = records.ToList();
         }
+        _logger.LogInformation("Started loading stoptimes");
+        var stopwatch = Stopwatch.StartNew();
+        using (var reader = new StreamReader($@"{_dataPath.FullName}\stop_times.txt"))
+        using (var csv = new CsvReader(reader, config))
+        {
+            csv.Context.RegisterClassMap<StopTimeMap>();
+            var records = csv.GetRecords<StopTime>();
+            feed.StopTimes = records.ToList();
+        }
+        _logger.LogInformation("Finished loading {total} stoptimes in {elapsed}", feed.StopTimes.Count, stopwatch.Elapsed);
 
         //var feed = await DownloadFeed(reader, supplierConfig);
 
@@ -69,14 +159,16 @@ public partial class GenericGTFSSupplier
     {
         _rawPath = Directory.CreateDirectory("gtfs_raw");
         _dataPath = Directory.CreateDirectory("gtfs_data");
-
+        _logger.LogInformation("Created {raw} and {data}", _rawPath.FullName, _dataPath.FullName);
         foreach (FileInfo file in _rawPath.GetFiles())
         {
+            _logger.LogInformation("Deleting {file}", file.FullName);
             file.Delete();
         }
 
         foreach (FileInfo file in _dataPath.GetFiles())
         {
+            _logger.LogInformation("Deleting {file}", file.FullName);
             file.Delete();
         }
         foreach (DirectoryInfo dir in _rawPath.GetDirectories())
