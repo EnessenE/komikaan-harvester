@@ -1,8 +1,7 @@
 ﻿using Dapper;
-using GTFS;
 using komikaan.Common.Models;
 using komikaan.Harvester.Interfaces;
-using Npgsql;
+using komikaan.Harvester.Suppliers;
 using System.Data;
 
 namespace komikaan.Harvester.Contexts;
@@ -83,15 +82,15 @@ internal class PostgresContext : IDataContext
     public async Task ImportAsync(GTFSFeed feed)
     {
 
-        await _gtfsContext.UpsertAgenciesAsync(feed.Agencies);
-        await _gtfsContext.UpsertRoutesAsync(feed.Routes);
-        await _gtfsContext.UpsertTripsAsync(feed.Trips);
-        await _gtfsContext.UpsertStopsAsync(feed.Stops);
-        await _gtfsContext.UpsertCalendarsAsync(feed.Calendars);
-        await _gtfsContext.UpsertCalendarDatesAsync(feed.CalendarDates);
-        ////await _gtfsContext.UpsertFrequenciesAsync(feed.Frequencies);
-        await _gtfsContext.UpsertStopTimesAsync(feed.StopTimes);
-        await _gtfsContext.UpsertShapesAsync(feed.Shapes);
+        //await _gtfsContext.UpsertAgenciesAsync(feed.Agencies);
+        //await _gtfsContext.UpsertRoutesAsync(feed.Routes);
+        //await _gtfsContext.UpsertTripsAsync(feed.Trips);
+        //await _gtfsContext.UpsertStopsAsync(feed.Stops);
+        //await _gtfsContext.UpsertCalendarsAsync(feed.Calendars);
+        //await _gtfsContext.UpsertCalendarDatesAsync(feed.CalendarDates);
+        //////await _gtfsContext.UpsertFrequenciesAsync(feed.Frequencies);
+        //await _gtfsContext.UpsertStopTimesAsync(feed.StopTimes);
+        //await _gtfsContext.UpsertShapesAsync(feed.Shapes);
 
         _logger.LogInformation("Done with import.");
     }

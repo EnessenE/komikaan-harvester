@@ -1,10 +1,10 @@
-﻿using System.Text;
-using RabbitMQ.Client;
-using System.Text.Json;
-using RabbitMQ.Client.Events;
-using komikaan.Harvester.Managers;
-using JNogueira.Discord.Webhook.Client;
+﻿using JNogueira.Discord.WebhookClient;
 using komikaan.Common.Models;
+using komikaan.Harvester.Managers;
+using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
+using System.Text;
+using System.Text.Json;
 
 namespace komikaan.Harvester.Contexts
 {
@@ -35,8 +35,8 @@ namespace komikaan.Harvester.Contexts
                     RetrievalType = RetrievalType.LOCAL,
                     DataType = SupplierType.GTFS,
                     PollingRate = TimeSpan.Zero,
-                    Name = "sncf-ter",
-                    Url = "C:\\Users\\Enes\\Downloads\\ter-sncf.zip",
+                    Name = "OpenOV",
+                    Url = "C:\\Users\\Enes\\Desktop\\gtfs-openov-nl.zip",
                     ETag = null,
                     ImportId = Guid.NewGuid(),
                     LatestSuccesfullImportId = Guid.Parse("40d5bb36-fcff-4b85-ac85-16eb37980aec"),
@@ -136,12 +136,12 @@ namespace komikaan.Harvester.Contexts
             );
             try
             {
-                await _discordWebHookClient.SendToDiscord(message);
+                await _discordWebHookClient.SendToDiscordAsync(message);
             }
             catch (Exception err)
             {
                 _logger.LogError(err, "Failed to send a message about a failure");
-                await _discordWebHookClient.SendToDiscord(new DiscordMessage("Unknown failure", Environment.MachineName));
+                await _discordWebHookClient.SendToDiscordAsync(new DiscordMessage("Unknown failure", Environment.MachineName));
             }
 
         }
