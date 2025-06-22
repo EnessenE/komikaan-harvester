@@ -27,6 +27,8 @@ public partial class GenericGTFSSupplier
  
     public async Task<GTFSFeed> RetrieveFeed(SupplierConfiguration supplierConfig)
     {
+        await DownloadFeed(supplierConfig);
+
         CreateClearDirectories();
         ZipFile.ExtractToDirectory(_dataPath.GetFiles().First().FullName, _rawPath.FullName);
         var config = new CsvConfiguration(CultureInfo.InvariantCulture)
@@ -102,7 +104,11 @@ public partial class GenericGTFSSupplier
             var response = await client.DownloadDataAsync(request);
             await File.WriteAllBytesAsync(_rawPath+@"\gtfs_file.zip", response);
         }
-        else 
+        else if (supplier.RetrievalType == RetrievalType.LOCAL)
+        {
+            File.Copy(supplier.Url, _rawPath + @"\gtfs_file.zip");
+        }
+        else
         {
             throw new NotImplementedException("Unsupported retrievaltype");
         }
