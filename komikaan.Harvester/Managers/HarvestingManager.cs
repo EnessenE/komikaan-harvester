@@ -6,6 +6,7 @@ using CsvHelper.TypeConversion;
 using JNogueira.Discord.WebhookClient;
 using komikaan.Common.Models;
 using komikaan.Harvester.Interfaces;
+using komikaan.Harvester.Models;
 using komikaan.Harvester.Suppliers;
 
 namespace komikaan.Harvester.Managers
@@ -55,6 +56,9 @@ namespace komikaan.Harvester.Managers
         public async Task Harvest(SupplierConfiguration config)
         {
             Directory.CreateDirectory(@"/app/");
+            StaticImportData.CurrentDataOrigin = config.Name;
+            StaticImportData.CurrentImportId = config.ImportId;
+
             try
             {
                 var stopwatch = Stopwatch.StartNew();
@@ -65,11 +69,6 @@ namespace komikaan.Harvester.Managers
 
                 var mappings = await _dataContext.GetTypeMappingsAsync(config);
                 _logger.LogInformation("Supplier has {x} mappings", mappings?.Count);
-                _logger.LogInformation("Adjusting feed started {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
-                await SendMessageAsync(config, "Adjusting feed");
-                await AdjustFeedAsync(feed, config, mappings);
-                await SendMessageAsync(config, "Finished adjusting feed");
-                _logger.LogInformation("Finished adjusting feed started {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
                 await SendMessageAsync(config, "Database import started!");
                 await _dataContext.ImportAsync(feed);
                 _logger.LogInformation("Finished importing data in {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
@@ -79,11 +78,11 @@ namespace komikaan.Harvester.Managers
                 await NotifyAsync(feed);
                 _logger.LogInformation("Notified the gardeners for {name}", config.Name);
                 await SendMessageAsync(config, "Notified gardeners, starting to delete old data");
-                await _dataContext.DeleteOldDataAsync(config);
+                //await _dataContext.DeleteOldDataAsync(config);
                 _logger.LogInformation("Old data cleanup");
                 await SendMessageAsync(config, "Cleaning old stops");
                 await _dataContext.CleanOldStopDataAsync(config);
-                await MarkAsFinished(config, true);
+                //await MarkAsFinished(config, true);
                 _logger.LogInformation("Finished import in {time}", stopwatch.Elapsed.ToString("g"));
                 await SendMessageAsync(config, "Finished import in " + stopwatch.Elapsed.ToString("g"));
                 feed.Dispose();
@@ -112,32 +111,6 @@ namespace komikaan.Harvester.Managers
             await _dataContext.MarkDownloadAsync(config, success);
         }
 
-        private async Task AdjustFeedAsync(GTFSFeed feed, SupplierConfiguration config, List<SupplierTypeMapping> mappings)
-        {
-            var amountPerChunk = Math.Round((decimal)feed.Stops.Count() / 10, 0);
-            var chunks = feed.Stops.ToList().Chunk((int)amountPerChunk);
-            _logger.LogInformation("Split into {c} chunks of {amountPerChunk}", chunks.Count(), amountPerChunk);
-            //var tasks = new List<Task>();
-            //var totalUnknown = 0;
-            //var chunk = 0;
-            //foreach (var stops in chunks)
-            //{
-            //    chunk += 1;
-            //    using (_logger.BeginScope(chunk))
-            //    {
-            //        var task = new Task(async () =>
-            //        {
-            //            var data = await DetectStopsType(feed, config, mappings, stops);
-            //            Interlocked.Increment(ref totalUnknown);
-            //        });
-            //        task.Start();
-            //        tasks.Add(task);
-            //    }
-            //}
-            //Task.WaitAll(tasks.ToArray());
-            //_logger.LogInformation("Total unknown stops: {total}", totalUnknown);
-            await Task.CompletedTask;
-        }
 
         //private async Task<int> DetectStopsType(GTFSFeed feed, SupplierConfiguration config, List<SupplierTypeMapping> mappings, IEnumerable<Stop> stops)
         //{

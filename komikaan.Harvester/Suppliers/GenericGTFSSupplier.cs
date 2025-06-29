@@ -3,6 +3,7 @@ using CsvHelper.Configuration;
 using JNogueira.Discord.WebhookClient;
 using komikaan.Common.Models;
 using komikaan.GTFS.Models.Static.Models;
+using komikaan.Harvester.Adapters;
 using komikaan.Harvester.Contexts;
 using komikaan.Harvester.Interfaces;
 using RestSharp;
@@ -29,11 +30,18 @@ public class GenericGTFSSupplier
         _gtfsContext = gtfsContext;
     }
 
-    public class AgencyMap : ClassMap<Agency>{
+    public class AgencyMap : ClassMap<PSQLAgency>{
         public AgencyMap()
         {
-            Map(m => m.AgencyName).Name("agency_name");
-            Map(m => m.AgencyId).Name("agency_id");
+            // Maps for base fields using PostgreSQL names
+            Map(m => m.Id).Name("agency_id");
+            Map(m => m.Name).Name("agency_name");
+            Map(m => m.Url).Name("agency_url");
+            Map(m => m.Timezone).Name("agency_timezone");
+            Map(m => m.LanguageCode).Name("agency_lang");
+            Map(m => m.Phone).Name("agency_phone");
+            Map(m => m.FareUrl).Name("agency_fare_url");
+            Map(m => m.Email).Name("agency_email");
         }
     }
 
@@ -82,8 +90,10 @@ public class GenericGTFSSupplier
             await _dataContext.UpdateImportStatusAsync(supplierConfig, "Importing agency.txt");
             using (var csv = new CsvReader(reader, config))
             {
+                _logger.LogInformation($"Found a file with {csv?.ColumnCount} columns");
                 csv.Context.RegisterClassMap<AgencyMap>();
-                var records = csv.GetRecords<Agency>();
+                var records = csv.GetRecords<PSQLAgency>().ToList();
+                _logger.LogInformation($"Found a feed with {records?.Count()} agencies");
                 await _gtfsContext.UpsertAgenciesAsync(supplierConfig, records);
             }
         }
@@ -95,8 +105,8 @@ public class GenericGTFSSupplier
             using (var csv = new CsvReader(reader, config))
             {
                 csv.Context.RegisterClassMap<StopTimeMap>();
-                var records = csv.GetRecords<StopTime>();
-                feed.StopTimes = records.ToList();
+                var records = csv.GetRecords<PSQLStopTime>();
+                await _gtfsContext.UpsertStopTimesAsync(supplierConfig, records.ToList());
             }
         }
         _logger.LogInformation("Finished loading {total} stoptimes in {elapsed}", feed.StopTimes.Count, stopwatch.Elapsed);
@@ -111,7 +121,6 @@ public class GenericGTFSSupplier
 
         //await SendMessageAsync("Started data adjustment stops", supplierConfig);
         //await ChunkMapStopsAsync(feed);
-        _logger.LogInformation($"Found a feed with {feed.Agencies?.Count} agencies");
         return feed;
     }
 

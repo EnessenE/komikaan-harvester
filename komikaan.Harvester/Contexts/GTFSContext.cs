@@ -1,7 +1,9 @@
 ﻿using komikaan.Common.Models;
 using komikaan.GTFS.Models.Static;
 using komikaan.GTFS.Models.Static.Models;
+using komikaan.Harvester.Adapters;
 using Npgsql;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace komikaan.Harvester.Contexts;
@@ -21,13 +23,13 @@ public class GTFSContext
         var builder = new NpgsqlDataSourceBuilder(connectionString);
         // Map composite types for each entity (these are the custom types in your PostgreSQL DB)
         //builder.MapComposite<PsqlTrip>("public.trips_type");
-        builder.MapComposite<Agency>("public.agencies_type");
+        builder.MapComposite<PSQLAgency>("public.agencies_type");
         //builder.MapComposite<PsqlRoute>("public.routes_type");
         //builder.MapComposite<PsqlStop>("public.stops_type");
         //builder.MapComposite<Calendar>("public.calenders_type");
         //builder.MapComposite<PsqlCalendarDate>("public.calendar_dates_type");
         //builder.MapComposite<Frequency>("public.frequencies_type");
-        //builder.MapComposite<PsqlStopTime>("public.stop_times_type");
+        builder.MapComposite<PSQLStopTime>("public.stop_times_type");
         //builder.MapComposite<PsqlShape>("public.shapes_type");
 
         // Build the NpgsqlDataSource
@@ -122,7 +124,7 @@ public class GTFSContext
 
 
     //    // Bulk upsert for agencies
-    public async Task UpsertAgenciesAsync(SupplierConfiguration supplierConfig, IEnumerable<Agency> agencies)
+    public async Task UpsertAgenciesAsync(SupplierConfiguration supplierConfig, IEnumerable<PSQLAgency> agencies)
     {
         if (agencies.Any())
         {
@@ -204,15 +206,19 @@ public class GTFSContext
     //    }
 
     //    // Bulk upsert for stop times
-    //    public async Task UpsertStopTimesAsync(IEnumerable<StopTime> stopTimes)
-    //    {
-    //        if (stopTimes.Any())
-    //        {
-    //            var item = stopTimes.First();
-    //            await UpsertEntityAsync("public.upsert_stop_times2", "public.stop_times_type", ToPsql(stopTimes), 100000, true);
-    //            //await UpsertEntityAsync("public.upsert_stop_times", "public.stop_times_type", ToPsql(stopTimes), 100000, false);
-    //        }
-    //    }
+    public async Task UpsertStopTimesAsync(SupplierConfiguration supplierConfig, IEnumerable<PSQLStopTime> stopTimes)
+    {
+        if (stopTimes.Any())
+        {
+            foreach (var item in stopTimes.Take(100))
+            {
+                _logger.LogInformation("ar {ar}", item.ArrivalTimeData);
+                _logger.LogInformation("dep {ar}", item.DepartureTimeData);
+            }
+            await UpsertEntityAsync(supplierConfig, "public.upsert_stop_times2", "public.stop_times_type", stopTimes, 100000, true);
+            //await UpsertEntityAsync("public.upsert_stop_times", "public.stop_times_type", ToPsql(stopTimes), 100000, false);
+        }
+    }
 
     //    // Bulk upsert for shapes
     //    public async Task UpsertShapesAsync(IEnumerable<Shape> shapes)
@@ -227,14 +233,6 @@ public class GTFSContext
     //    }
 
 
-    //    private static IEnumerable<PsqlStopTime> ToPsql(IEnumerable<StopTime> items)
-    //    {
-    //        foreach (var item in items)
-    //        {
-    //            var psqlItem = new PsqlStopTime(item);
-    //            yield return psqlItem;
-    //        }
-    //    }
     //    private static IEnumerable<PsqlRoute> ToPsql(IEnumerable<Route> items)
     //    {
     //        foreach (var item in items)

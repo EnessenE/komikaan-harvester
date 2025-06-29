@@ -56,7 +56,7 @@ internal class PostgresContext : IDataContext
         using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
 
         await dbConnection.ExecuteAsync(
-         @"CALL public.harvester_update_supplier_for_download(@target, @last_update, @successfullyDownloaded)",
+         @"CALL public.harvester_mark_supplier_failed(@target)",
         new
         {
             target = config.Name,
@@ -80,6 +80,7 @@ internal class PostgresContext : IDataContext
 
     public async Task DeleteOldDataAsync(SupplierConfiguration config)
     {
+        _logger.LogWarning("Moving to last import");
         using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
         await dbConnection.ExecuteAsync(
           @"CALL public.move_to_new_import(@id, @dataorigin)",
