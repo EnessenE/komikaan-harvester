@@ -44,7 +44,21 @@ public class GenericGTFSSupplier
             Map(m => m.Email).Name("agency_email");
         }
     }
+    public sealed class CalendarDateMap : ClassMap<PSQLCalendarDate>
+    {
+        public CalendarDateMap()
+        {
+            // GTFS -> PSQL property mappings
+            Map(m => m.ServiceId).Name("service_id");
+            Map(m => m.Date).Name("date"); // still maps the GTFS raw string
+            Map(m => m.ExceptionType).Name("exception_type");
 
+            // Note: If you store the parsed DateTime in Date_Exact,
+            // you can handle that in your load logic or with a custom converter.
+            // Tracking columns (data_origin, internal_id, last_updated, import_id)
+            // are not mapped — they’re set by defaults in the PSQLCalendarDate.
+        }
+    }
     public sealed class StopTimeMap : ClassMap<StopTime>
     {
         public StopTimeMap()
@@ -97,16 +111,28 @@ public class GenericGTFSSupplier
                 await _gtfsContext.UpsertAgenciesAsync(supplierConfig, records);
             }
         }
-        _logger.LogInformation("Started loading stoptimes");
+        //_logger.LogInformation("Started loading stoptimes");
         var stopwatch = Stopwatch.StartNew();
-        using (var reader = new StreamReader($@"{_dataPath.FullName}\stop_times.txt"))
+        //using (var reader = new StreamReader($@"{_dataPath.FullName}\stop_times.txt"))
+        //{
+        //    await _dataContext.UpdateImportStatusAsync(supplierConfig, "Importing stop_times.txt");
+        //    using (var csv = new CsvReader(reader, config))
+        //    {
+        //        csv.Context.RegisterClassMap<StopTimeMap>();
+        //        var records = csv.GetRecords<PSQLStopTime>();
+        //        await _gtfsContext.UpsertStopTimesAsync(supplierConfig, records.ToList());
+        //    }
+        //}
+        stopwatch.Restart();
+        _logger.LogInformation("Started loading calendar_dates");
+        using (var reader = new StreamReader($@"{_dataPath.FullName}\calendar_dates.txt"))
         {
-            await _dataContext.UpdateImportStatusAsync(supplierConfig, "Importing stop_times.txt");
+            await _dataContext.UpdateImportStatusAsync(supplierConfig, "Importing calendar_dates.txt");
             using (var csv = new CsvReader(reader, config))
             {
-                csv.Context.RegisterClassMap<StopTimeMap>();
-                var records = csv.GetRecords<PSQLStopTime>();
-                await _gtfsContext.UpsertStopTimesAsync(supplierConfig, records.ToList());
+                csv.Context.RegisterClassMap<CalendarDateMap>();
+                var records = csv.GetRecords<PSQLCalendarDate>();
+                await _gtfsContext.UpsertCalendarDatesAsync(supplierConfig, records.ToList());
             }
         }
         _logger.LogInformation("Finished loading {total} stoptimes in {elapsed}", feed.StopTimes.Count, stopwatch.Elapsed);

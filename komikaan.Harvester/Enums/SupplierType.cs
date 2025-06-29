@@ -2,6 +2,6 @@
 
 public enum SupplierType
 {
-    Unknown,
+    UNKNOWN,
     GTFS
 }

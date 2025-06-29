@@ -27,7 +27,7 @@ public class GTFSContext
         //builder.MapComposite<PsqlRoute>("public.routes_type");
         //builder.MapComposite<PsqlStop>("public.stops_type");
         //builder.MapComposite<Calendar>("public.calenders_type");
-        //builder.MapComposite<PsqlCalendarDate>("public.calendar_dates_type");
+        builder.MapComposite<PSQLCalendarDate>("public.calendar_dates_type");
         //builder.MapComposite<Frequency>("public.frequencies_type");
         builder.MapComposite<PSQLStopTime>("public.stop_times_type");
         //builder.MapComposite<PsqlShape>("public.shapes_type");
@@ -181,17 +181,17 @@ public class GTFSContext
     //        }
     //    }
 
-    //    // Bulk upsert for calendar dates
-    //    public async Task UpsertCalendarDatesAsync(IEnumerable<CalendarDate> calendarDates)
-    //    {
-    //        if (calendarDates.Any())
-    //        {
-    //            const string procedureName = "public.upsert_calendar_dates";
-    //            const string tvpTypeName = "public.calendar_dates_type";
-    //            var item = calendarDates.First();
-    //            await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(calendarDates), 100000, false);
-    //        }
-    //    }
+    // Bulk upsert for calendar dates
+    public async Task UpsertCalendarDatesAsync(SupplierConfiguration supplierConfig, IEnumerable<CalendarDate> calendarDates)
+    {
+        if (calendarDates.Any())
+        {
+            const string procedureName = "public.upsert_calendar_dates";
+            const string tvpTypeName = "public.calendar_dates_type";
+            var item = calendarDates.First();
+            await UpsertEntityAsync(supplierConfig, procedureName, tvpTypeName, calendarDates, 100000, false);
+        }
+    }
 
     //    // Bulk upsert for frequencies
     //    public async Task UpsertFrequenciesAsync(IEnumerable<Frequency> frequencies)
