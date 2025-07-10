@@ -1,5 +1,6 @@
 ﻿using CsvHelper;
 using CsvHelper.Configuration;
+using CsvHelper.TypeConversion;
 using JNogueira.Discord.WebhookClient;
 using komikaan.Common.Models;
 using komikaan.GTFS.Models.Static.Models;
@@ -50,7 +51,7 @@ public class GenericGTFSSupplier
         {
             // GTFS -> PSQL property mappings
             Map(m => m.ServiceId).Name("service_id");
-            Map(m => m.Date).Name("date"); // still maps the GTFS raw string
+            Map(m => m.Date).Name("date").TypeConverterOption.Format("yyyyMMdd"); // still maps the GTFS raw string
             Map(m => m.ExceptionType).Name("exception_type");
 
             // Note: If you store the parsed DateTime in Date_Exact,
@@ -96,12 +97,11 @@ public class GenericGTFSSupplier
         };
 
         var feed = new GTFSFeed();
-        await SendMessageAsync("Started reading GTFS file", supplierConfig);
-        await _dataContext.UpdateImportStatusAsync(supplierConfig, "Extracting complete");
+        await LogMessage(supplierConfig, "Reading agencies", false);
 
         using (var reader = new StreamReader($@"{_dataPath.FullName}\agency.txt"))
         {
-            await _dataContext.UpdateImportStatusAsync(supplierConfig, "Importing agency.txt");
+            await LogMessage(supplierConfig, "Importing agencies", false);
             using (var csv = new CsvReader(reader, config))
             {
                 _logger.LogInformation($"Found a file with {csv?.ColumnCount} columns");
@@ -113,21 +113,22 @@ public class GenericGTFSSupplier
         }
         //_logger.LogInformation("Started loading stoptimes");
         var stopwatch = Stopwatch.StartNew();
+        await LogMessage(supplierConfig, "Reading stoptimes", false);
         //using (var reader = new StreamReader($@"{_dataPath.FullName}\stop_times.txt"))
         //{
-        //    await _dataContext.UpdateImportStatusAsync(supplierConfig, "Importing stop_times.txt");
         //    using (var csv = new CsvReader(reader, config))
         //    {
         //        csv.Context.RegisterClassMap<StopTimeMap>();
         //        var records = csv.GetRecords<PSQLStopTime>();
-        //        await _gtfsContext.UpsertStopTimesAsync(supplierConfig, records.ToList());
+        //        await LogMessage(supplierConfig, "Importing stoptimes", false);
+        //        await _gtfsContext.UpsertStopTimesAsync(supplierConfig, records);
         //    }
         //}
         stopwatch.Restart();
-        _logger.LogInformation("Started loading calendar_dates");
+        await LogMessage(supplierConfig, "Reading calendar_dates", false);
         using (var reader = new StreamReader($@"{_dataPath.FullName}\calendar_dates.txt"))
         {
-            await _dataContext.UpdateImportStatusAsync(supplierConfig, "Importing calendar_dates.txt");
+            await LogMessage(supplierConfig, "Importing calendar_dates", false);
             using (var csv = new CsvReader(reader, config))
             {
                 csv.Context.RegisterClassMap<CalendarDateMap>();
@@ -135,19 +136,21 @@ public class GenericGTFSSupplier
                 await _gtfsContext.UpsertCalendarDatesAsync(supplierConfig, records.ToList());
             }
         }
-        _logger.LogInformation("Finished loading {total} stoptimes in {elapsed}", feed.StopTimes.Count, stopwatch.Elapsed);
-
-        //var feed = await DownloadFeed(reader, supplierConfig);
+        _logger.LogInformation("Finished loading {total} calendar_dates in {elapsed}", feed.StopTimes.Count, stopwatch.Elapsed);
 
         //await SendMessageAsync("Finished reading GTFS file", supplierConfig);
-        //_logger.LogInformation("Adjusting stops");
-        //await SendMessageAsync("Starting data adjustment for trips", supplierConfig);
 
-        //await ChunkMapTripsAsync(feed);
-
-        //await SendMessageAsync("Started data adjustment stops", supplierConfig);
-        //await ChunkMapStopsAsync(feed);
+        await LogMessage(supplierConfig, "Finished!", false);
         return feed;
+    }
+
+    private async Task LogMessage(SupplierConfiguration supplierConfig, string message, bool discord)
+    {
+        _logger.LogInformation(message);
+        await _dataContext.UpdateImportStatusAsync(supplierConfig, message);
+        if (discord) { 
+            await SendMessageAsync(message, supplierConfig); 
+        }
     }
 
     private void CreateClearDirectories()

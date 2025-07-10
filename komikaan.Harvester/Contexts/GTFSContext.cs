@@ -182,7 +182,7 @@ public class GTFSContext
     //    }
 
     // Bulk upsert for calendar dates
-    public async Task UpsertCalendarDatesAsync(SupplierConfiguration supplierConfig, IEnumerable<CalendarDate> calendarDates)
+    public async Task UpsertCalendarDatesAsync(SupplierConfiguration supplierConfig, IEnumerable<PSQLCalendarDate> calendarDates)
     {
         if (calendarDates.Any())
         {

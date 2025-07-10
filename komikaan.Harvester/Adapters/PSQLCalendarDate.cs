@@ -8,6 +8,8 @@ namespace komikaan.GTFS.Models.Static.Models
     /// </summary>
     public class PSQLCalendarDate : CalendarDate
     {
+        public string ExceptionTypeData { get=> base.ExceptionType.ToString(); }
+
         // Always-present tracking fields
         public string DataOrigin { get; set; } = StaticImportData.CurrentDataOrigin;
         public Guid InternalId { get; set; } = Guid.NewGuid();
