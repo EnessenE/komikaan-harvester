@@ -25,7 +25,7 @@ public class GTFSContext
         //builder.MapComposite<PsqlTrip>("public.trips_type");
         builder.MapComposite<PSQLAgency>("public.agencies_type");
         //builder.MapComposite<PsqlRoute>("public.routes_type");
-        //builder.MapComposite<PsqlStop>("public.stops_type");
+        builder.MapComposite<PSQLStop>("public.stops_type");
         //builder.MapComposite<Calendar>("public.calenders_type");
         builder.MapComposite<PSQLCalendarDate>("public.calendar_dates_type");
         //builder.MapComposite<Frequency>("public.frequencies_type");
@@ -157,17 +157,16 @@ public class GTFSContext
     //        }
     //    }
 
-    //    // Bulk upsert for stops
-    //    public async Task UpsertStopsAsync(IEnumerable<Stop> stops)
-    //    {
-    //        if (stops.Any())
-    //        {
-    //            const string procedureName = "public.upsert_stops";
-    //            const string tvpTypeName = "public.stops_type";
-    //            var item = stops.First();
-    //            await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(stops), 1000, false);
-    //        }
-    //    }
+    // Bulk upsert for stops
+    public async Task UpsertStopsAsync(SupplierConfiguration supplierConfig, IEnumerable<PSQLStop> stops)
+    {
+        if (stops.Any())
+        {
+            const string procedureName = "public.upsert_stops";
+            const string tvpTypeName = "public.stops_type";
+            await UpsertEntityAsync(supplierConfig, procedureName, tvpTypeName, stops, 1000, false);
+        }
+    }
 
     //    // Bulk upsert for trips
     //    public async Task UpsertTripsAsync(IEnumerable<Trip> trips)

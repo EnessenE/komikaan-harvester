@@ -1,12 +1,12 @@
 ﻿using CsvHelper;
 using CsvHelper.Configuration;
-using CsvHelper.TypeConversion;
 using JNogueira.Discord.WebhookClient;
 using komikaan.Common.Models;
 using komikaan.GTFS.Models.Static.Models;
 using komikaan.Harvester.Adapters;
 using komikaan.Harvester.Contexts;
 using komikaan.Harvester.Interfaces;
+using komikaan.Harvester.Managers;
 using RestSharp;
 using System.Diagnostics;
 using System.Globalization;
@@ -14,7 +14,7 @@ using System.IO.Compression;
 namespace komikaan.Harvester.Suppliers;
 
 
-public class GenericGTFSSupplier
+public partial class GenericGTFSSupplier
 {
     private readonly DiscordWebhookClient _discordWebHookClient;
     private ILogger<GenericGTFSSupplier> _logger;
@@ -22,61 +22,15 @@ public class GenericGTFSSupplier
     private static DirectoryInfo _dataPath;
     private IDataContext _dataContext;
     private GTFSContext _gtfsContext;
+    private IGardenerContext _gardenerContext;
 
-    public GenericGTFSSupplier(DiscordWebhookClient discordWebhookClient, ILogger<GenericGTFSSupplier> logger, IDataContext dataContext, GTFSContext gtfsContext)
+    public GenericGTFSSupplier(DiscordWebhookClient discordWebhookClient, ILogger<GenericGTFSSupplier> logger, IDataContext dataContext, GTFSContext gtfsContext, IGardenerContext gardenerContext)
     {
         _discordWebHookClient = discordWebhookClient;
         _logger = logger;
         _dataContext = dataContext;
         _gtfsContext = gtfsContext;
-    }
-
-    public class AgencyMap : ClassMap<PSQLAgency>{
-        public AgencyMap()
-        {
-            // Maps for base fields using PostgreSQL names
-            Map(m => m.Id).Name("agency_id");
-            Map(m => m.Name).Name("agency_name");
-            Map(m => m.Url).Name("agency_url");
-            Map(m => m.Timezone).Name("agency_timezone");
-            Map(m => m.LanguageCode).Name("agency_lang");
-            Map(m => m.Phone).Name("agency_phone");
-            Map(m => m.FareUrl).Name("agency_fare_url");
-            Map(m => m.Email).Name("agency_email");
-        }
-    }
-    public sealed class CalendarDateMap : ClassMap<PSQLCalendarDate>
-    {
-        public CalendarDateMap()
-        {
-            // GTFS -> PSQL property mappings
-            Map(m => m.ServiceId).Name("service_id");
-            Map(m => m.Date).Name("date").TypeConverterOption.Format("yyyyMMdd"); // still maps the GTFS raw string
-            Map(m => m.ExceptionType).Name("exception_type");
-
-            // Note: If you store the parsed DateTime in Date_Exact,
-            // you can handle that in your load logic or with a custom converter.
-            // Tracking columns (data_origin, internal_id, last_updated, import_id)
-            // are not mapped — they’re set by defaults in the PSQLCalendarDate.
-        }
-    }
-    public sealed class StopTimeMap : ClassMap<StopTime>
-    {
-        public StopTimeMap()
-        {
-            Map(m => m.TripId).Name("trip_id");
-            Map(m => m.ArrivalTime).Name("arrival_time").TypeConverter<GtfsTimeConverter>();
-            Map(m => m.DepartureTime).Name("departure_time").TypeConverter<GtfsTimeConverter>();
-            Map(m => m.StopId).Name("stop_id");
-            Map(m => m.StopSequence).Name("stop_sequence");
-            Map(m => m.StopHeadsign).Name("stop_headsign");
-            Map(m => m.PickupType).Name("pickup_type");
-            Map(m => m.DropOffType).Name("drop_off_type");
-            Map(m => m.ContinuousPickup).Name("continuous_pickup");
-            Map(m => m.ContinuousDropOff).Name("continuous_drop_off");
-            Map(m => m.ShapeDistTraveled).Name("shape_dist_traveled");
-            Map(m => m.Timepoint).Name("timepoint");
-        }
+        _gardenerContext = gardenerContext;
     }
 
     public async Task<GTFSFeed> RetrieveFeed(SupplierConfiguration supplierConfig)
@@ -126,21 +80,34 @@ public class GenericGTFSSupplier
         //}
         stopwatch.Restart();
         await LogMessage(supplierConfig, "Reading calendar_dates", false);
-        using (var reader = new StreamReader($@"{_dataPath.FullName}\calendar_dates.txt"))
+        //using (var reader = new StreamReader($@"{_dataPath.FullName}\calendar_dates.txt"))
+        //{
+        //    await LogMessage(supplierConfig, "Importing calendar_dates", false);
+        //    using (var csv = new CsvReader(reader, config))
+        //    {
+        //        csv.Context.RegisterClassMap<CalendarDateMap>();
+        //        var records = csv.GetRecords<PSQLCalendarDate>();
+        //        await _gtfsContext.UpsertCalendarDatesAsync(supplierConfig, records.ToList());
+        //    }
+        //}
+
+        await LogMessage(supplierConfig, "Reading stops", false);
+        using (var reader = new StreamReader($@"{_dataPath.FullName}\stops.txt"))
         {
-            await LogMessage(supplierConfig, "Importing calendar_dates", false);
+            await LogMessage(supplierConfig, "Importing stops", false);
             using (var csv = new CsvReader(reader, config))
             {
-                csv.Context.RegisterClassMap<CalendarDateMap>();
-                var records = csv.GetRecords<PSQLCalendarDate>();
-                await _gtfsContext.UpsertCalendarDatesAsync(supplierConfig, records.ToList());
+                csv.Context.RegisterClassMap<StopMap>();
+                var records = csv.GetRecords<PSQLStop>();
+                var stops = records.ToList();
+                //await _gtfsContext.UpsertStopsAsync(supplierConfig, stops);
+                await NotifyAsync(supplierConfig, stops);
             }
         }
-        _logger.LogInformation("Finished loading {total} calendar_dates in {elapsed}", feed.StopTimes.Count, stopwatch.Elapsed);
 
         //await SendMessageAsync("Finished reading GTFS file", supplierConfig);
 
-        await LogMessage(supplierConfig, "Finished!", false);
+        await LogMessage(supplierConfig, "Success", false);
         return feed;
     }
 
@@ -152,6 +119,17 @@ public class GenericGTFSSupplier
             await SendMessageAsync(message, supplierConfig); 
         }
     }
+
+    private Task NotifyAsync(SupplierConfiguration supplier, List<PSQLStop> stops)
+    {
+        foreach (var stop in stops)
+        {
+            _gardenerContext.SendMessage(new GardernerNotification() { Stop = stop, Supplier = supplier.Name });
+
+        }
+        return Task.CompletedTask;
+    }
+
 
     private void CreateClearDirectories()
     {

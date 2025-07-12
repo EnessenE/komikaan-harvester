@@ -74,18 +74,15 @@ namespace komikaan.Harvester.Managers
                 _logger.LogInformation("Finished importing data in {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
                 _logger.LogInformation("Notifying the gardeners for {name}", config.Name);
 
-                await SendMessageAsync(config, "Finished, notifying gardeners");
-                await NotifyAsync(feed);
                 _logger.LogInformation("Notified the gardeners for {name}", config.Name);
                 await SendMessageAsync(config, "Notified gardeners, starting to delete old data");
-                //await _dataContext.DeleteOldDataAsync(config);
+                await _dataContext.DeleteOldDataAsync(config);
                 _logger.LogInformation("Old data cleanup");
                 await SendMessageAsync(config, "Cleaning old stops");
                 await _dataContext.CleanOldStopDataAsync(config);
                 //await MarkAsFinished(config, true);
                 _logger.LogInformation("Finished import in {time}", stopwatch.Elapsed.ToString("g"));
                 await SendMessageAsync(config, "Finished import in " + stopwatch.Elapsed.ToString("g"));
-                feed.Dispose();
             }
             catch (Exception error)
             {
@@ -94,7 +91,7 @@ namespace komikaan.Harvester.Managers
                 _logger.LogError(error, "Following error:");
                 await MarkAsFinished(config, false);
                 _logger.LogInformation("Marked as failed!");
-                await _dataContext.UpdateImportStatusAsync(config, "Feed import failed");
+                await _dataContext.UpdateImportStatusAsync(config, "import failed");
             }
             finally
             {
@@ -184,17 +181,6 @@ namespace komikaan.Harvester.Managers
         //    }
         //    return totalUnknown;
         //}
-
-        private Task NotifyAsync(GTFSFeed feed)
-        {
-            foreach (var stop in feed.Stops)
-            {
-                _gardenerContext.SendMessage(new GardernerNotification() { Stop = stop });
-
-            }
-            return Task.CompletedTask;
-        }
-
         public Task StopAsync(CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
