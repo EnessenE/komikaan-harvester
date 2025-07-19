@@ -55,9 +55,9 @@ public partial class GenericGTFSSupplier
         await LogMessage(supplierConfig, "Reading agencies", false);
 
         var stopwatch = Stopwatch.StartNew();
-        if (File.Exists($@"{_dataPath.FullName}\agencies.txt"))
+        if (File.Exists($@"{_dataPath.FullName}/agencies.txt"))
         {
-            using (var reader = new StreamReader($@"{_dataPath.FullName}\agency.txt"))
+            using (var reader = new StreamReader($@"{_dataPath.FullName}/agency.txt"))
             {
                 await LogMessage(supplierConfig, "Importing agencies", false);
                 using (var csv = new CsvReader(reader, config))
@@ -71,10 +71,10 @@ public partial class GenericGTFSSupplier
             }
         }
 
-        if (File.Exists($@"{_dataPath.FullName}\stop_times.txt"))
+        if (File.Exists($@"{_dataPath.FullName}/stop_times.txt"))
         {
             await LogMessage(supplierConfig, "Reading stop_times", false);
-            using (var reader = new StreamReader($@"{_dataPath.FullName}\stop_times.txt"))
+            using (var reader = new StreamReader($@"{_dataPath.FullName}/stop_times.txt"))
             {
                 using (var csv = new CsvReader(reader, config))
                 {
@@ -86,11 +86,11 @@ public partial class GenericGTFSSupplier
             }
         }
 
-        if (File.Exists($@"{_dataPath.FullName}\calendar_dates.txt"))
+        if (File.Exists($@"{_dataPath.FullName}/calendar_dates.txt"))
         {
             stopwatch.Restart();
             await LogMessage(supplierConfig, "Reading calendar_dates", false);
-            using (var reader = new StreamReader($@"{_dataPath.FullName}\calendar_dates.txt"))
+            using (var reader = new StreamReader($@"{_dataPath.FullName}/calendar_dates.txt"))
             {
                 await LogMessage(supplierConfig, "Importing calendar_dates", false);
                 using (var csv = new CsvReader(reader, config))
@@ -106,7 +106,7 @@ public partial class GenericGTFSSupplier
 
         stopwatch.Restart();
         await LogMessage(supplierConfig, "Reading routes", false);
-        using (var reader = new StreamReader($@"{_dataPath.FullName}\routes.txt"))
+        using (var reader = new StreamReader($@"{_dataPath.FullName}/routes.txt"))
         {
             await LogMessage(supplierConfig, "Importing routes", false);
             using (var csv = new CsvReader(reader, config))
@@ -118,7 +118,7 @@ public partial class GenericGTFSSupplier
         }
         stopwatch.Restart();
         await LogMessage(supplierConfig, "Reading trips", false);
-        using (var reader = new StreamReader($@"{_dataPath.FullName}\trips.txt"))
+        using (var reader = new StreamReader($@"{_dataPath.FullName}/trips.txt"))
         {
             await LogMessage(supplierConfig, "Importing trips", false);
             using (var csv = new CsvReader(reader, config))
@@ -134,7 +134,7 @@ public partial class GenericGTFSSupplier
         //Stops should be after stoptimes, trips and routes as those are used to determine some on-the-fly data
         stopwatch.Restart();
         await LogMessage(supplierConfig, "Reading stops", false);
-        using (var reader = new StreamReader($@"{_dataPath.FullName}\stops.txt"))
+        using (var reader = new StreamReader($@"{_dataPath.FullName}/stops.txt"))
         {
             await LogMessage(supplierConfig, "Importing stops", false);
             using (var csv = new CsvReader(reader, config))
@@ -148,10 +148,10 @@ public partial class GenericGTFSSupplier
         }
 
         stopwatch.Restart();
-        if (File.Exists($@"{_dataPath.FullName}\shapes.txt"))
+        if (File.Exists($@"{_dataPath.FullName}/shapes.txt"))
         {
             await LogMessage(supplierConfig, "Reading shapes", false);
-            using (var reader = new StreamReader($@"{_dataPath.FullName}\shapes.txt"))
+            using (var reader = new StreamReader($@"{_dataPath.FullName}/shapes.txt"))
             {
                 await LogMessage(supplierConfig, "Importing shapes", false);
                 using (var csv = new CsvReader(reader, config))
@@ -163,11 +163,11 @@ public partial class GenericGTFSSupplier
             }
         }
         stopwatch.Restart();
-        if (File.Exists($@"{_dataPath.FullName}\calendar.txt"))
+        if (File.Exists($@"{_dataPath.FullName}/calendar.txt"))
         {
             await LogMessage(supplierConfig, "Reading calendar", false);
 
-            using (var reader = new StreamReader($@"{_dataPath.FullName}\calendar.txt"))
+            using (var reader = new StreamReader($@"{_dataPath.FullName}/calendar.txt"))
             {
                 await LogMessage(supplierConfig, "Importing calendar", false);
                 using (var csv = new CsvReader(reader, config))
