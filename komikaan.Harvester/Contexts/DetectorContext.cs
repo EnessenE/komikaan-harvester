@@ -70,11 +70,13 @@ namespace komikaan.Harvester.Contexts
             _channel.ContinuationTimeout = TimeSpan.FromHours(3);
 
             _channel.ExchangeDeclare("harvester-notifications", ExchangeType.Direct, durable: true);
+            var args = new Dictionary<string, object>();
+            args.Add("x-queue-type", "quorum");
             _channel.QueueDeclare(queue: "harvesters",
                                  durable: true,
                                  exclusive: false,
                                  autoDelete: false,
-                                 arguments: null);
+                                 arguments: args);
             _channel.QueueBind("harvesters", "harvester-notifications", "harvester");
 
             var consumer = new EventingBasicConsumer(_channel);
