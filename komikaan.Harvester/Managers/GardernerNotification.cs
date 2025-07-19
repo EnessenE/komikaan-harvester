@@ -1,4 +1,4 @@
-﻿using GTFS.Entities;
+﻿using komikaan.GTFS.Models.Static.Models;
 
 namespace komikaan.Harvester.Managers
 {

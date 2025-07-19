@@ -395,4 +395,9 @@ FodyWeavers.xsd
 *.msp
 
 # JetBrains Rider
-*.sln.iml
+*.sln.iml'
+
+
+## Other things
+*/gtfs_data/
+*/gtfs_raw/

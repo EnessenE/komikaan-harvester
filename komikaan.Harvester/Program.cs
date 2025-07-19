@@ -1,5 +1,5 @@
 using System.Reflection;
-using JNogueira.Discord.Webhook.Client;
+using JNogueira.Discord.WebhookClient;
 using komikaan.Harvester.Contexts;
 using komikaan.Harvester.Interfaces;
 using komikaan.Harvester.Managers;
@@ -39,10 +39,19 @@ namespace komikaan.Harvester
 
             builder.Services.AddSingleton<HarvestingManager>();
             builder.Services.AddHostedService(x => x.GetRequiredService<HarvestingManager>());
-            var client = new DiscordWebhookClient("https://discord.com/api/webhooks/1249326974883725343/hMojhofrsjrsY9Sl0kvaffMh6RGDltMe5W6sDrunND3zppONAI8Y00HaEUcfy7QumsOJ");
-            builder.Services.AddSingleton(client);
+            FixDiscordClient(builder.Services);
 
-            builder.Services.AddSingleton<GardenerContext>();
+            var rmqFeatureFlag = builder.Configuration?.GetValue<bool?>("FeatureFlags:RabbitMQ");
+            if (rmqFeatureFlag.HasValue && rmqFeatureFlag.Value == false)
+            {
+                builder.Services.AddSingleton<IGardenerContext, FakeGardener>();
+            }
+            else
+            {
+                builder.Services.AddSingleton<IGardenerContext, GardenerContext>();
+            }
+
+
             builder.Services.AddSingleton<GenericGTFSSupplier>();
             builder.Services.AddHostedService<DetectorContext>();
             builder.Services.AddSingleton<IDataContext, PostgresContext>();
@@ -64,6 +73,16 @@ namespace komikaan.Harvester
             app.MapControllers();
 
             app.Run();
+        }
+
+        private static void FixDiscordClient(IServiceCollection services)
+        {
+            services.AddHttpClient<DiscordWebhookHttpClient>("DiscordWebhookHttpClient", delegate (HttpClient client)
+            {
+                client.BaseAddress = new Uri("https://discord.com/api/webhooks/1249326974883725343/hMojhofrsjrsY9Sl0kvaffMh6RGDltMe5W6sDrunND3zppONAI8Y00HaEUcfy7QumsOJ");
+                client.Timeout = TimeSpan.FromSeconds(30.0);
+            });
+            services.AddSingleton<DiscordWebhookClient>();
         }
     }
 }

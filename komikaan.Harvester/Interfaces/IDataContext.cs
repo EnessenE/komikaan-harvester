@@ -1,13 +1,13 @@
-﻿using GTFS;
-using komikaan.Common.Models;
+﻿using komikaan.Common.Models;
 
 namespace komikaan.Harvester.Interfaces;
 
 public interface IDataContext
 {
-    public Task ImportAsync(GTFSFeed feed);
-    Task MarkDownload(SupplierConfiguration config, bool success);
-    Task CleanOldStopData(SupplierConfiguration config);
+    Task MarkDownloadAsync(SupplierConfiguration config, bool success);
+    Task CleanOldStopDataAsync(SupplierConfiguration config);
     Task DeleteOldDataAsync(SupplierConfiguration config);
     Task<List<SupplierTypeMapping>?> GetTypeMappingsAsync(SupplierConfiguration config);
+    Task MarkStartImportAsync(SupplierConfiguration config);
+    Task UpdateImportStatusAsync(SupplierConfiguration config, string importStatus);
 }
