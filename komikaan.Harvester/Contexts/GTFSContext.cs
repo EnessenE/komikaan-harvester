@@ -204,11 +204,6 @@ public class GTFSContext
     {
         if (stopTimes.Any())
         {
-            foreach (var item in stopTimes.Take(100))
-            {
-                _logger.LogInformation("ar {ar}", item.ArrivalTimeData);
-                _logger.LogInformation("dep {ar}", item.DepartureTimeData);
-            }
             await UpsertEntityAsync(supplierConfig, "public.upsert_stop_times2", "public.stop_times_type", stopTimes, 100000, true);
             //await UpsertEntityAsync("public.upsert_stop_times", "public.stop_times_type", ToPsql(stopTimes), 100000, false);
         }
