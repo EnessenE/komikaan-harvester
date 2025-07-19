@@ -53,44 +53,85 @@ public partial class GenericGTFSSupplier
         var feed = new GTFSFeed();
         await LogMessage(supplierConfig, "Reading agencies", false);
 
-        using (var reader = new StreamReader($@"{_dataPath.FullName}\agency.txt"))
+        var stopwatch = Stopwatch.StartNew();
+        if (File.Exists($@"{_dataPath.FullName}\agencies.txt"))
         {
-            await LogMessage(supplierConfig, "Importing agencies", false);
-            using (var csv = new CsvReader(reader, config))
+            using (var reader = new StreamReader($@"{_dataPath.FullName}\agency.txt"))
             {
-                _logger.LogInformation($"Found a file with {csv?.ColumnCount} columns");
-                csv.Context.RegisterClassMap<AgencyMap>();
-                var records = csv.GetRecords<PSQLAgency>().ToList();
-                _logger.LogInformation($"Found a feed with {records?.Count()} agencies");
-                await _gtfsContext.UpsertAgenciesAsync(supplierConfig, records);
+                await LogMessage(supplierConfig, "Importing agencies", false);
+                using (var csv = new CsvReader(reader, config))
+                {
+                    _logger.LogInformation($"Found a file with {csv?.ColumnCount} columns");
+                    csv.Context.RegisterClassMap<AgencyMap>();
+                    var records = csv.GetRecords<PSQLAgency>().ToList();
+                    _logger.LogInformation($"Found a feed with {records?.Count()} agencies");
+                    await _gtfsContext.UpsertAgenciesAsync(supplierConfig, records);
+                }
             }
         }
-        //_logger.LogInformation("Started loading stoptimes");
-        var stopwatch = Stopwatch.StartNew();
-        await LogMessage(supplierConfig, "Reading stoptimes", false);
-        //using (var reader = new StreamReader($@"{_dataPath.FullName}\stop_times.txt"))
-        //{
-        //    using (var csv = new CsvReader(reader, config))
-        //    {
-        //        csv.Context.RegisterClassMap<StopTimeMap>();
-        //        var records = csv.GetRecords<PSQLStopTime>();
-        //        await LogMessage(supplierConfig, "Importing stoptimes", false);
-        //        await _gtfsContext.UpsertStopTimesAsync(supplierConfig, records);
-        //    }
-        //}
-        stopwatch.Restart();
-        await LogMessage(supplierConfig, "Reading calendar_dates", false);
-        //using (var reader = new StreamReader($@"{_dataPath.FullName}\calendar_dates.txt"))
-        //{
-        //    await LogMessage(supplierConfig, "Importing calendar_dates", false);
-        //    using (var csv = new CsvReader(reader, config))
-        //    {
-        //        csv.Context.RegisterClassMap<CalendarDateMap>();
-        //        var records = csv.GetRecords<PSQLCalendarDate>();
-        //        await _gtfsContext.UpsertCalendarDatesAsync(supplierConfig, records.ToList());
-        //    }
-        //}
 
+        if (File.Exists($@"{_dataPath.FullName}\stop_times.txt"))
+        {
+            await LogMessage(supplierConfig, "Reading stop_times", false);
+            using (var reader = new StreamReader($@"{_dataPath.FullName}\stop_times.txt"))
+            {
+                using (var csv = new CsvReader(reader, config))
+                {
+                    csv.Context.RegisterClassMap<StopTimeMap>();
+                    var records = csv.GetRecords<PSQLStopTime>();
+                    await LogMessage(supplierConfig, "Importing stoptimes", false);
+                    await _gtfsContext.UpsertStopTimesAsync(supplierConfig, records);
+                }
+            }
+        }
+
+        if (File.Exists($@"{_dataPath.FullName}\calendar_dates.txt"))
+        {
+            stopwatch.Restart();
+            await LogMessage(supplierConfig, "Reading calendar_dates", false);
+            using (var reader = new StreamReader($@"{_dataPath.FullName}\calendar_dates.txt"))
+            {
+                await LogMessage(supplierConfig, "Importing calendar_dates", false);
+                using (var csv = new CsvReader(reader, config))
+                {
+                    csv.Context.RegisterClassMap<CalendarDateMap>();
+                    var records = csv.GetRecords<PSQLCalendarDate>();
+                    await _gtfsContext.UpsertCalendarDatesAsync(supplierConfig, records.ToList());
+                }
+            }
+
+        }
+
+
+        stopwatch.Restart();
+        await LogMessage(supplierConfig, "Reading routes", false);
+        using (var reader = new StreamReader($@"{_dataPath.FullName}\routes.txt"))
+        {
+            await LogMessage(supplierConfig, "Importing routes", false);
+            using (var csv = new CsvReader(reader, config))
+            {
+                csv.Context.RegisterClassMap<RouteMap>();
+                var records = csv.GetRecords<PSQLRoute>();
+                await _gtfsContext.UpsertRoutesAsync(supplierConfig, records.ToList());
+            }
+        }
+        stopwatch.Restart();
+        await LogMessage(supplierConfig, "Reading trips", false);
+        using (var reader = new StreamReader($@"{_dataPath.FullName}\trips.txt"))
+        {
+            await LogMessage(supplierConfig, "Importing trips", false);
+            using (var csv = new CsvReader(reader, config))
+            {
+                csv.Context.RegisterClassMap<TripMap>();
+                var records = csv.GetRecords<PSQLTrip>();
+                await _gtfsContext.UpsertTripsAsync(supplierConfig, records.ToList());
+            }
+        }
+
+
+
+        //Stops should be after stoptimes, trips and routes as those are used to determine some on-the-fly data
+        stopwatch.Restart();
         await LogMessage(supplierConfig, "Reading stops", false);
         using (var reader = new StreamReader($@"{_dataPath.FullName}\stops.txt"))
         {
@@ -100,9 +141,44 @@ public partial class GenericGTFSSupplier
                 csv.Context.RegisterClassMap<StopMap>();
                 var records = csv.GetRecords<PSQLStop>();
                 var stops = records.ToList();
-                //await _gtfsContext.UpsertStopsAsync(supplierConfig, stops);
+                await _gtfsContext.UpsertStopsAsync(supplierConfig, stops);
                 await NotifyAsync(supplierConfig, stops);
             }
+        }
+
+        stopwatch.Restart();
+        if (File.Exists($@"{_dataPath.FullName}\shapes.txt"))
+        {
+            await LogMessage(supplierConfig, "Reading shapes", false);
+            using (var reader = new StreamReader($@"{_dataPath.FullName}\shapes.txt"))
+            {
+                await LogMessage(supplierConfig, "Importing shapes", false);
+                using (var csv = new CsvReader(reader, config))
+                {
+                    csv.Context.RegisterClassMap<ShapeMap>();
+                    var records = csv.GetRecords<PSQLShape>();
+                    await _gtfsContext.UpsertShapesAsync(supplierConfig, records.ToList());
+                }
+            }
+        }
+        stopwatch.Restart();
+        if (File.Exists($@"{_dataPath.FullName}\calendar.txt"))
+        {
+            await LogMessage(supplierConfig, "Reading calendar", false);
+
+            using (var reader = new StreamReader($@"{_dataPath.FullName}\calendar.txt"))
+            {
+                await LogMessage(supplierConfig, "Importing calendar", false);
+                using (var csv = new CsvReader(reader, config))
+                {
+                    csv.Context.RegisterClassMap<CalendarMap>();
+                    var records = csv.GetRecords<PSQLCalendar>();
+                    await _gtfsContext.UpsertCalendarsAsync(supplierConfig, records);
+                }
+            }
+        }
+        else{
+            _logger.LogInformation("No calendar.txt, next");
         }
 
         //await SendMessageAsync("Finished reading GTFS file", supplierConfig);
@@ -122,6 +198,7 @@ public partial class GenericGTFSSupplier
 
     private Task NotifyAsync(SupplierConfiguration supplier, List<PSQLStop> stops)
     {
+        _logger.LogInformation("Notifying gardeners");
         foreach (var stop in stops)
         {
             _gardenerContext.SendMessage(new GardernerNotification() { Stop = stop, Supplier = supplier.Name });

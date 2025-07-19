@@ -22,15 +22,15 @@ public class GTFSContext
         // Build the NpgsqlDataSource
         var builder = new NpgsqlDataSourceBuilder(connectionString);
         // Map composite types for each entity (these are the custom types in your PostgreSQL DB)
-        //builder.MapComposite<PsqlTrip>("public.trips_type");
+        builder.MapComposite<PSQLTrip>("public.trips_type");
         builder.MapComposite<PSQLAgency>("public.agencies_type");
-        //builder.MapComposite<PsqlRoute>("public.routes_type");
+        builder.MapComposite<PSQLRoute>("public.routes_type");
         builder.MapComposite<PSQLStop>("public.stops_type");
-        //builder.MapComposite<Calendar>("public.calenders_type");
+        builder.MapComposite<PSQLCalendar>("public.calendars_type");
         builder.MapComposite<PSQLCalendarDate>("public.calendar_dates_type");
         //builder.MapComposite<Frequency>("public.frequencies_type");
         builder.MapComposite<PSQLStopTime>("public.stop_times_type");
-        //builder.MapComposite<PsqlShape>("public.shapes_type");
+        builder.MapComposite<PSQLShape>("public.shapes_type");
 
         // Build the NpgsqlDataSource
         _dataSource = builder.Build();
@@ -59,11 +59,11 @@ public class GTFSContext
         }
         var stopwatch = Stopwatch.StartNew();
         _logger.LogInformation("Importing to {procedure}", procedureName);
-        var chunks = entities.Chunk(batchSize);
-        _logger.LogInformation("Split into {amount} of chunks of {size}", chunks.Count(), batchSize);
+        var chunks = entities.Chunk(batchSize).ToList();
+        _logger.LogInformation("Split into {amount} of chunks of {size}", chunks.Count, batchSize);
         var totalGrabbed = 0;
 
-        foreach (var chunk in chunks.ToList())
+        foreach (var chunk in chunks)
         {
             var chunkWatch = Stopwatch.StartNew();
             totalGrabbed += 1;
@@ -87,8 +87,6 @@ public class GTFSContext
         if (partioned)
         {
             _logger.LogInformation("Deleting irrelevant partitions");
-
-            var item = entities.First();
 
             using (var connection = _dataSource.CreateConnection())
             {
@@ -135,27 +133,25 @@ public class GTFSContext
     }
 
     //    // Bulk upsert for routes
-    //    public async Task UpsertRoutesAsync(IEnumerable<Route> routes)
-    //    {
-    //        if (routes.Any())
-    //        {
-    //            const string procedureName = "public.upsert_routes";
-    //            const string tvpTypeName = "public.routes_type";
-    //            var item = routes.First();
-    //            await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(routes), 5000, false);
-    //        }
-    //    }
+    public async Task UpsertRoutesAsync(SupplierConfiguration supplierConfig, IEnumerable<PSQLRoute> routes)
+    {
+        if (routes.Any())
+        {
+            const string procedureName = "public.upsert_routes";
+            const string tvpTypeName = "public.routes_type";
+            await UpsertEntityAsync(supplierConfig, procedureName, tvpTypeName, routes, 5000, false);
+        }
+    }
 
-    //    public async Task UpsertCalendarsAsync(IEnumerable<Calendar> calenders)
-    //    {
-    //        if (calenders.Any())
-    //        {
-    //            const string procedureName = "public.upsert_calenders";
-    //            const string tvpTypeName = "public.calenders_type";
-    //            var item = calenders.First();
-    //            await UpsertEntityAsync(procedureName, tvpTypeName, calenders, 5000, false);
-    //        }
-    //    }
+    public async Task UpsertCalendarsAsync(SupplierConfiguration supplierConfig, IEnumerable<PSQLCalendar> calenders)
+    {
+        if (calenders.Any())
+        {
+            const string procedureName = "public.upsert_calendars";
+            const string tvpTypeName = "public.calendars_type";
+            await UpsertEntityAsync(supplierConfig, procedureName, tvpTypeName, calenders, 5000, false);
+        }
+    }
 
     // Bulk upsert for stops
     public async Task UpsertStopsAsync(SupplierConfiguration supplierConfig, IEnumerable<PSQLStop> stops)
@@ -169,16 +165,15 @@ public class GTFSContext
     }
 
     //    // Bulk upsert for trips
-    //    public async Task UpsertTripsAsync(IEnumerable<Trip> trips)
-    //    {
-    //        if (trips.Any())
-    //        {
-    //            const string procedureName = "public.upsert_trips";
-    //            const string tvpTypeName = "public.trips_type";
-    //            var item = trips.First();
-    //            await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(trips), 10000, false);
-    //        }
-    //    }
+    public async Task UpsertTripsAsync(SupplierConfiguration supplierConfig, IEnumerable<PSQLTrip> trips)
+    {
+        if (trips.Any())
+        {
+            const string procedureName = "public.upsert_trips";
+            const string tvpTypeName = "public.trips_type";
+            await UpsertEntityAsync(supplierConfig, procedureName, tvpTypeName, trips, 10000, false);
+        }
+    }
 
     // Bulk upsert for calendar dates
     public async Task UpsertCalendarDatesAsync(SupplierConfiguration supplierConfig, IEnumerable<PSQLCalendarDate> calendarDates)
@@ -220,63 +215,14 @@ public class GTFSContext
     }
 
     //    // Bulk upsert for shapes
-    //    public async Task UpsertShapesAsync(IEnumerable<Shape> shapes)
-    //    {
-    //        if (shapes.Any())
-    //        {
-    //            const string procedureName = "public.upsert_shapes";
-    //            const string tvpTypeName = "public.shapes_type";
-    //            var item = shapes.First();
-    //            await UpsertEntityAsync(procedureName, tvpTypeName, ToPsql(shapes), 100000, false);
-    //        }
-    //    }
-
-
-    //    private static IEnumerable<PsqlRoute> ToPsql(IEnumerable<Route> items)
-    //    {
-    //        foreach (var item in items)
-    //        {
-    //            var psqlItem = new PsqlRoute(item);
-    //            yield return psqlItem;
-    //        }
-    //    }
-
-    //    private static IEnumerable<PsqlTrip> ToPsql(IEnumerable<Trip> items)
-    //    {
-    //        foreach (var item in items)
-    //        {
-    //            var psqlItem = new PsqlTrip(item);
-    //            yield return psqlItem;
-    //        }
-    //    }
-
-    //    private static IEnumerable<PsqlStop> ToPsql(IEnumerable<Stop> items)
-    //    {
-    //        foreach (var item in items)
-    //        {
-    //            var psqlItem = new PsqlStop(item);
-    //            yield return psqlItem;
-    //        }
-    //    }
-
-    //    private static IEnumerable<PsqlCalendarDate> ToPsql(IEnumerable<CalendarDate> items)
-    //    {
-    //        foreach (var item in items)
-    //        {
-    //            var psqlItem = new PsqlCalendarDate(item);
-    //            yield return psqlItem;
-    //        }
-    //    }
-
-
-    //    private static IEnumerable<PsqlShape> ToPsql(IEnumerable<Shape> items)
-    //    {
-    //        foreach (var item in items)
-    //        {
-    //            var psqlItem = new PsqlShape(item);
-    //            yield return psqlItem;
-    //        }
-    //    }
-
-    //}
+    public async Task UpsertShapesAsync(SupplierConfiguration supplierConfig, IEnumerable<PSQLShape> shapes)
+    {
+        if (shapes.Any())
+        {
+            const string procedureName = "public.upsert_shapes";
+            const string tvpTypeName = "public.shapes_type";
+            var item = shapes.First();
+            await UpsertEntityAsync(supplierConfig, procedureName, tvpTypeName, shapes, 100000, false);
+        }
+    }
 }

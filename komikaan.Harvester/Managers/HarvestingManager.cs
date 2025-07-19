@@ -1,8 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Globalization;
-using CsvHelper;
-using CsvHelper.Configuration;
-using CsvHelper.TypeConversion;
 using JNogueira.Discord.WebhookClient;
 using komikaan.Common.Models;
 using komikaan.Harvester.Interfaces;
@@ -53,6 +49,7 @@ namespace komikaan.Harvester.Managers
 
         }
 
+        // A bit of a mess atm due to a GTFS dependency removal, will clean this up when its not summer
         public async Task Harvest(SupplierConfiguration config)
         {
             Directory.CreateDirectory(@"/app/");
@@ -65,22 +62,13 @@ namespace komikaan.Harvester.Managers
                 _logger.LogInformation("Starting import from {supplier}", config.Name);
                 await SendMessageAsync(config, "Starting import, getting feed info");
                 var feed = await _genericGTFSSupplier.RetrieveFeed(config);
-                _logger.LogInformation("Finished retrieving data in {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
-
-                var mappings = await _dataContext.GetTypeMappingsAsync(config);
-                _logger.LogInformation("Supplier has {x} mappings", mappings?.Count);
-                await SendMessageAsync(config, "Database import started!");
-                await _dataContext.ImportAsync(feed);
                 _logger.LogInformation("Finished importing data in {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
-                _logger.LogInformation("Notifying the gardeners for {name}", config.Name);
-
-                _logger.LogInformation("Notified the gardeners for {name}", config.Name);
-                await SendMessageAsync(config, "Notified gardeners, starting to delete old data");
+                await SendMessageAsync(config, "Starting to delete old data");
                 await _dataContext.DeleteOldDataAsync(config);
                 _logger.LogInformation("Old data cleanup");
                 await SendMessageAsync(config, "Cleaning old stops");
                 await _dataContext.CleanOldStopDataAsync(config);
-                //await MarkAsFinished(config, true);
+                await MarkAsFinished(config, true);
                 _logger.LogInformation("Finished import in {time}", stopwatch.Elapsed.ToString("g"));
                 await SendMessageAsync(config, "Finished import in " + stopwatch.Elapsed.ToString("g"));
             }
@@ -108,79 +96,6 @@ namespace komikaan.Harvester.Managers
             await _dataContext.MarkDownloadAsync(config, success);
         }
 
-
-        //private async Task<int> DetectStopsType(GTFSFeed feed, SupplierConfiguration config, List<SupplierTypeMapping> mappings, IEnumerable<Stop> stops)
-        //{
-        //    var iteration = 0;
-        //    int totalUnknown = 0;
-        //    foreach (var stop in stops)
-        //    {
-        //        iteration += 1;
-        //        if (iteration % 100 == 0 && iteration != 0)
-        //        {
-        //            _logger.LogInformation("{it}/{total} stop types", iteration, stops.Count());
-        //        }
-
-        //        try
-        //        {
-        //            if (feed.Stop_StopTimes.ContainsKey(stop.Id.ToLowerInvariant()))
-        //            {
-        //                var stopwatch = Stopwatch.StartNew();
-        //                var relatedTimes = feed.Stop_StopTimes[stop.Id.ToLowerInvariant()].Take(1);
-        //                // _logger.LogInformation("Got {x} times, {time}", relatedTimes.Count, stopwatch.ElapsedMilliseconds);
-        //                var relatedTrips = feed.StopTime_Trips[relatedTimes.First().TripId.ToLowerInvariant()].Take(3);
-        //                // _logger.LogInformation("Got {x} relatedTrips, {time}", relatedTrips.Count, stopwatch.ElapsedMilliseconds);
-        //                var relatedRoutes = feed.Routes.Where(route => relatedTrips.Any(x => x.RouteId.Equals(route.Id))).Take(100);
-        //                // _logger.LogInformation("Got {x} relatedRoutes, {time}", relatedRoutes.Count, stopwatch.ElapsedMilliseconds);
-        //                var routeTypes = relatedRoutes.Select(route => route.Type).ToList();
-        //                // _logger.LogInformation("Got {x} routeTypes, {time}", routeTypes.Count, stopwatch.ElapsedMilliseconds);
-        //                var groupedTypes = routeTypes.GroupBy(x => ConvertStopType(x))
-        //                         .ToDictionary(x => x.Key, y => y.Count());
-        //                // _logger.LogInformation("Got {x} groupedTypes, {time}", groupedTypes.Count, stopwatch.ElapsedMilliseconds);
-
-
-        //                if (groupedTypes.Count() == 1)
-        //                {
-        //                    var StopType = groupedTypes.First().Key;
-        //                    stop.StopType = StopType;
-        //                }
-        //                else if (groupedTypes.Count() > 1)
-        //                {
-        //                    stop.StopType = StopType.Mixed;
-        //                }
-        //                else
-        //                {
-        //                    stop.StopType = StopType.Unknown;
-        //                }
-
-
-        //                if (mappings != null && mappings.Any())
-        //                {
-        //                    var overrideStopType = mappings.FirstOrDefault(mapping => mapping.ListedType == (int) stop.StopType);
-        //                    if (overrideStopType != null)
-        //                    {
-        //                        stop.StopType = (StopType) overrideStopType.NewType;
-        //                    }
-        //                }
-        //            }
-        //            else
-        //            {
-        //                _logger.LogDebug("Forced {name} to unknown", stop.Name);
-        //                Interlocked.Increment(ref totalUnknown);
-        //                stop.StopType = StopType.Unknown;
-        //            }
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            _logger.LogDebug("Forced {name} to unknown", stop.Name);
-        //            _logger.LogError(ex, "broken");
-
-        //            Interlocked.Increment(ref totalUnknown);
-        //            stop.StopType = StopType.Unknown;
-        //        }
-        //    }
-        //    return totalUnknown;
-        //}
         public Task StopAsync(CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
