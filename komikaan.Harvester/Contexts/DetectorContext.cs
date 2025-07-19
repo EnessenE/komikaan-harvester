@@ -1,10 +1,11 @@
-﻿using System.Text;
-using RabbitMQ.Client;
-using System.Text.Json;
-using RabbitMQ.Client.Events;
-using komikaan.Harvester.Managers;
-using JNogueira.Discord.Webhook.Client;
+﻿using JNogueira.Discord.WebhookClient;
 using komikaan.Common.Models;
+using komikaan.Harvester.Interfaces;
+using komikaan.Harvester.Managers;
+using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
+using System.Text;
+using System.Text.Json;
 
 namespace komikaan.Harvester.Contexts
 {
@@ -14,14 +15,16 @@ namespace komikaan.Harvester.Contexts
         private readonly HarvestingManager _harvestingManager;
         private readonly DiscordWebhookClient _discordWebHookClient;
         private IModel _channel;
+        private IDataContext _dataContext;
         private readonly IConfiguration _configuration;
 
-        public DetectorContext(ILogger<DetectorContext> logger, HarvestingManager harvestingManager, DiscordWebhookClient discordWebHookClient, IConfiguration configuration)
+        public DetectorContext(ILogger<DetectorContext> logger, HarvestingManager harvestingManager, DiscordWebhookClient discordWebHookClient, IConfiguration configuration, IDataContext dataContext)
         {
             _logger = logger;
             _harvestingManager = harvestingManager;
             _discordWebHookClient = discordWebHookClient;
             _configuration = configuration;
+            _dataContext = dataContext;
         }
 
 
@@ -35,11 +38,11 @@ namespace komikaan.Harvester.Contexts
                     RetrievalType = RetrievalType.LOCAL,
                     DataType = SupplierType.GTFS,
                     PollingRate = TimeSpan.Zero,
-                    Name = "sncf-ter",
-                    Url = "C:\\Users\\Enes\\Downloads\\ter-sncf.zip",
+                    Name = "iledefrance",
+                    Url = "C:\\Users\\Enes\\Desktop\\iledefrance.zip",
                     ETag = null,
-                    ImportId = Guid.NewGuid(),
-                    LatestSuccesfullImportId = Guid.Parse("40d5bb36-fcff-4b85-ac85-16eb37980aec"),
+                    ImportId = Guid.Parse("7be7fe00-cd6d-44df-84e7-23d7898b05a2"),
+                    LatestSuccesfullImportId = Guid.Parse("7be7fe00-cd6d-44df-84e7-23d7898b05a2"),
                     LastUpdated = DateTimeOffset.UtcNow,
                     LastAttempt = null,
                     LastChecked = DateTimeOffset.UtcNow,
@@ -123,6 +126,8 @@ namespace komikaan.Harvester.Contexts
             using (_logger.BeginScope("{name} - {import}", item.Name, item.ImportId))
             {
                 _logger.LogInformation("Starting an import", item.Name);
+                await _dataContext.MarkStartImportAsync(item);
+                await _dataContext.UpdateImportStatusAsync(item, "Started");
                 await _harvestingManager.Harvest(item);
             }
         }
@@ -136,12 +141,12 @@ namespace komikaan.Harvester.Contexts
             );
             try
             {
-                await _discordWebHookClient.SendToDiscord(message);
+                await _discordWebHookClient.SendToDiscordAsync(message);
             }
             catch (Exception err)
             {
                 _logger.LogError(err, "Failed to send a message about a failure");
-                await _discordWebHookClient.SendToDiscord(new DiscordMessage("Unknown failure", Environment.MachineName));
+                await _discordWebHookClient.SendToDiscordAsync(new DiscordMessage("Unknown failure", Environment.MachineName));
             }
 
         }

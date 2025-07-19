@@ -1,10 +1,11 @@
-﻿using System.Text;
+﻿using komikaan.Harvester.Interfaces;
 using RabbitMQ.Client;
+using System.Text;
 using System.Text.Json;
 
 namespace komikaan.Harvester.Contexts
 {
-    public class GardenerContext
+    public class GardenerContext : IGardenerContext
     {
         private IModel _channel;
         private readonly ILogger<GardenerContext> _logger;
