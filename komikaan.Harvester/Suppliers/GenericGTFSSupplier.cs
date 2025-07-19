@@ -41,6 +41,7 @@ public partial class GenericGTFSSupplier
         await DownloadFeed(supplierConfig);
 
         await _dataContext.UpdateImportStatusAsync(supplierConfig, "Extracting files");
+        
         ZipFile.ExtractToDirectory(_rawPath.GetFiles().First().FullName, _dataPath.FullName);
         await _dataContext.UpdateImportStatusAsync(supplierConfig, "Extracting complete, starting reading");
         var config = new CsvConfiguration(CultureInfo.InvariantCulture)
@@ -248,13 +249,13 @@ public partial class GenericGTFSSupplier
 
             // The cancellation token comes from the caller. You can still make a call without it.
             var response = await client.DownloadDataAsync(request);
-            await File.WriteAllBytesAsync(_rawPath+@"\gtfs_file.zip", response);
+            await File.WriteAllBytesAsync(_rawPath + @"/gtfs_file.zip", response);
             await _dataContext.UpdateImportStatusAsync(supplier, "Feed download complete feed");
         }
         else if (supplier.RetrievalType == RetrievalType.LOCAL)
         {
             await _dataContext.UpdateImportStatusAsync(supplier, "Copying feed");
-            File.Copy(supplier.Url, _rawPath + @"\gtfs_file.zip");
+            File.Copy(supplier.Url, _rawPath + @"/gtfs_file.zip");
         }
         else
         {

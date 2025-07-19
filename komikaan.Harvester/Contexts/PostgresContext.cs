@@ -37,6 +37,7 @@ internal class PostgresContext : IDataContext
 
     public async Task UpdateImportStatusAsync(SupplierConfiguration config, string importStatus)
     {
+        _logger.LogInformation("Setting state to {state}", importStatus);
         using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
 
         await dbConnection.ExecuteAsync(
