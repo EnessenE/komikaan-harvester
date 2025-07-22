@@ -40,7 +40,7 @@ internal class PostgresContext : IDataContext
         using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
 
         await dbConnection.ExecuteAsync(
-         @"CALL public.harvester_mark_import_start(@data_origin)",
+         @"CALL public.harvester_import_finished(@data_origin)",
         new
         {
             data_origin = config.Name,
