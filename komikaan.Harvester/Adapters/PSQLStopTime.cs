@@ -103,7 +103,7 @@ namespace komikaan.Harvester.Adapters
         public int? TimepointTypeData
         {
             get => (int?)Timepoint;
-            set => Timepoint = (Timepoint)value;
+            set => Timepoint = (Timepoint?)value;
         }
     }
 }
