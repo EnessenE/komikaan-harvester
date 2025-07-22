@@ -68,7 +68,7 @@ namespace komikaan.Harvester.Managers
                 _logger.LogInformation("Old data cleanup");
                 await SendMessageAsync(config, "Cleaning old stops");
                 await _dataContext.CleanOldStopDataAsync(config);
-                await MarkAsFinished(config, true);
+                await _dataContext.MarkSuccessImportAsync(config);
                 _logger.LogInformation("Finished import in {time}", stopwatch.Elapsed.ToString("g"));
                 await SendMessageAsync(config, "Finished import in " + stopwatch.Elapsed.ToString("g"));
             }
@@ -77,7 +77,7 @@ namespace komikaan.Harvester.Managers
                 await SendMessageAsync(config, "Import failed! <@124928188647211009> \n " + error.Message);
                 _logger.LogCritical("Failed import for {supplier}", config.Name);
                 _logger.LogError(error, "Following error:");
-                await MarkAsFinished(config, false);
+                await _dataContext.MarkDownloadFailure(config);
                 _logger.LogInformation("Marked as failed!");
                 await _dataContext.UpdateImportStatusAsync(config, "import failed");
             }
@@ -89,12 +89,6 @@ namespace komikaan.Harvester.Managers
 
         }
 
-        private async Task MarkAsFinished(SupplierConfiguration config, bool success)
-        {
-            config.LastUpdated = DateTimeOffset.UtcNow;
-            config.DownloadPending = false;
-            await _dataContext.MarkDownloadAsync(config, success);
-        }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {

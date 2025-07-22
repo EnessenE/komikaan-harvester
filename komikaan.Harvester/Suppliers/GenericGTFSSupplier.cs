@@ -182,8 +182,6 @@ public class GenericGTFSSupplier
             _logger.LogInformation("No calendar.txt, next");
         }
 
-        //await SendMessageAsync("Finished reading GTFS file", supplierConfig);
-
         await LogMessage(supplierConfig, "Success", false);
     }
 

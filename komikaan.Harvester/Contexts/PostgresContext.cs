@@ -35,6 +35,20 @@ internal class PostgresContext : IDataContext
          );
     }
 
+    public async Task MarkSuccessImportAsync(SupplierConfiguration config)
+    {
+        using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
+
+        await dbConnection.ExecuteAsync(
+         @"CALL public.harvester_mark_import_start(@data_origin)",
+        new
+        {
+            data_origin = config.Name,
+        },
+             commandType: CommandType.Text
+         );
+    }
+
     public async Task UpdateImportStatusAsync(SupplierConfiguration config, string importStatus)
     {
         _logger.LogInformation("Setting state to {state}", importStatus);
@@ -52,7 +66,7 @@ internal class PostgresContext : IDataContext
          );
     }
 
-    public async Task MarkDownloadAsync(SupplierConfiguration config, bool success)
+    public async Task MarkDownloadFailure(SupplierConfiguration config)
     {
         using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
 
@@ -61,8 +75,6 @@ internal class PostgresContext : IDataContext
         new
         {
             target = config.Name,
-            last_update = config.LastUpdated,
-            successfullyDownloaded = success
         },
              commandType: CommandType.Text
          );
