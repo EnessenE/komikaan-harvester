@@ -5,7 +5,7 @@ namespace komikaan.Harvester.Interfaces
 {
     public interface ISupplier
     {
-        public Task<GTFSFeed> GetFeedAsync();
+        public Task GetFeedAsync();
         public SupplierConfiguration GetConfiguration();
     }
 }
