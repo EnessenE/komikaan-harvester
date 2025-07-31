@@ -54,7 +54,7 @@ public class GenericGTFSSupplier
         await LogMessage(supplierConfig, "Reading agencies", false);
 
         var stopwatch = Stopwatch.StartNew();
-        if (File.Exists($@"{_dataPath.FullName}/agencies.txt"))
+        if (File.Exists($@"{_dataPath.FullName}/agency.txt"))
         {
             using (var reader = new StreamReader($@"{_dataPath.FullName}/agency.txt"))
             {
