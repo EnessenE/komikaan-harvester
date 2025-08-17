@@ -46,7 +46,7 @@ namespace komikaan.GTFS.Models.Static.Models
         /// <summary>
         /// Maps GTFS RouteType to routes_type.route_type
         /// </summary>
-        public int RouteTypeData { get => (int)RouteType; set => RouteType = (RouteType)value; }
+        public int RouteTypeData { get => (int)ExtendedRouteType; set => ExtendedRouteType = (ExtendedRouteType)value; }
 
         /// <summary>
         /// Maps to routes_type.data_origin
