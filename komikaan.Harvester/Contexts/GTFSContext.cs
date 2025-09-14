@@ -37,7 +37,7 @@ public class GTFSContext
     }
 
 
-    private async Task UpsertEntityAsync<T>(SupplierConfiguration supplierConfig, string procedureName, string tvpTypeName, IEnumerable<T> entities, int batchSize, bool partioned) where T : GTFSStaticObject
+    private async Task UpsertEntityAsync<T>(ImportRequest supplierConfig, string procedureName, string tvpTypeName, IEnumerable<T> entities, int batchSize, bool partioned) where T : GTFSStaticObject
     {
         if (partioned)
         {
@@ -122,7 +122,7 @@ public class GTFSContext
 
 
     //    // Bulk upsert for agencies
-    public async Task UpsertAgenciesAsync(SupplierConfiguration supplierConfig, IEnumerable<PSQLAgency> agencies)
+    public async Task UpsertAgenciesAsync(ImportRequest supplierConfig, IEnumerable<PSQLAgency> agencies)
     {
         if (agencies.Any())
         {
@@ -133,7 +133,7 @@ public class GTFSContext
     }
 
     //    // Bulk upsert for routes
-    public async Task UpsertRoutesAsync(SupplierConfiguration supplierConfig, IEnumerable<PSQLRoute> routes)
+    public async Task UpsertRoutesAsync(ImportRequest supplierConfig, IEnumerable<PSQLRoute> routes)
     {
         if (routes.Any())
         {
@@ -143,7 +143,7 @@ public class GTFSContext
         }
     }
 
-    public async Task UpsertCalendarsAsync(SupplierConfiguration supplierConfig, IEnumerable<PSQLCalendar> calenders)
+    public async Task UpsertCalendarsAsync(ImportRequest supplierConfig, IEnumerable<PSQLCalendar> calenders)
     {
         if (calenders.Any())
         {
@@ -154,7 +154,7 @@ public class GTFSContext
     }
 
     // Bulk upsert for stops
-    public async Task UpsertStopsAsync(SupplierConfiguration supplierConfig, IEnumerable<PSQLStop> stops)
+    public async Task UpsertStopsAsync(ImportRequest supplierConfig, IEnumerable<PSQLStop> stops)
     {
         if (stops.Any())
         {
@@ -165,7 +165,7 @@ public class GTFSContext
     }
 
     //    // Bulk upsert for trips
-    public async Task UpsertTripsAsync(SupplierConfiguration supplierConfig, IEnumerable<PSQLTrip> trips)
+    public async Task UpsertTripsAsync(ImportRequest supplierConfig, IEnumerable<PSQLTrip> trips)
     {
         if (trips.Any())
         {
@@ -176,7 +176,7 @@ public class GTFSContext
     }
 
     // Bulk upsert for calendar dates
-    public async Task UpsertCalendarDatesAsync(SupplierConfiguration supplierConfig, IEnumerable<PSQLCalendarDate> calendarDates)
+    public async Task UpsertCalendarDatesAsync(ImportRequest supplierConfig, IEnumerable<PSQLCalendarDate> calendarDates)
     {
         if (calendarDates.Any())
         {
@@ -200,7 +200,7 @@ public class GTFSContext
     //    }
 
     //    // Bulk upsert for stop times
-    public async Task UpsertStopTimesAsync(SupplierConfiguration supplierConfig, IEnumerable<PSQLStopTime> stopTimes)
+    public async Task UpsertStopTimesAsync(ImportRequest supplierConfig, IEnumerable<PSQLStopTime> stopTimes)
     {
         if (stopTimes.Any())
         {
@@ -210,7 +210,7 @@ public class GTFSContext
     }
 
     //    // Bulk upsert for shapes
-    public async Task UpsertShapesAsync(SupplierConfiguration supplierConfig, IEnumerable<PSQLShape> shapes)
+    public async Task UpsertShapesAsync(ImportRequest supplierConfig, IEnumerable<PSQLShape> shapes)
     {
         if (shapes.Any())
         {

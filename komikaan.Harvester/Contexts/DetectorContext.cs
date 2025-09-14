@@ -33,7 +33,7 @@ namespace komikaan.Harvester.Contexts
             if (_configuration.GetValue("localtesting", false))
             {
                 _logger.LogWarning("Running in local test mode");
-                await ProcessMessageAsync(new SupplierConfiguration
+                await ProcessMessageAsync(new ImportRequest
                 {
                     RetrievalType = RetrievalType.LOCAL,
                     DataType = SupplierType.GTFS,
@@ -89,18 +89,18 @@ namespace komikaan.Harvester.Contexts
                     _logger.LogInformation("Received a message!");
                     var body = ea.Body.ToArray();
                     var message = Encoding.UTF8.GetString(body);
-                    var item = JsonSerializer.Deserialize<SupplierConfiguration>(message);
-                    try
+                    var item = JsonSerializer.Deserialize<ImportRequest>(message);
+                    if (DateTimeOffset.UtcNow - item.ImportRequestedAt > item.DelayImportBy)
                     {
-                        _channel.BasicAck(ea.DeliveryTag, false);
-                        await ProcessMessageAsync(item);
+                        await StartImport(ea, item);
+                        importRunning = false;
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        _logger.LogError(ex, "Unknown error");
-                        await SendMessageAsync(item, ex.Message);
+                        _logger.LogInformation($"{ea.DeliveryTag} is being artifically delayed");
+                        await Task.Delay(TimeSpan.FromMinutes(1));
+                        _channel.BasicNack(ea.DeliveryTag, false, true);
                     }
-                    importRunning = false;
                 }
                 else
                 {
@@ -118,12 +118,26 @@ namespace komikaan.Harvester.Contexts
             _logger.LogInformation("Started, waiting for a new import");
         }
 
+        private async Task StartImport(BasicDeliverEventArgs ea, ImportRequest item)
+        {
+            try
+            {
+                _channel.BasicAck(ea.DeliveryTag, false);
+                await ProcessMessageAsync(item);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unknown error");
+                await SendMessageAsync(item, ex.Message);
+            }
+        }
+
         public Task StopAsync(CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }
 
-        private async Task ProcessMessageAsync(SupplierConfiguration item)
+        private async Task ProcessMessageAsync(ImportRequest item)
         {
             using (_logger.BeginScope("{name} - {import}", item.Name, item.ImportId))
             {
@@ -135,7 +149,7 @@ namespace komikaan.Harvester.Contexts
         }
 
 
-        private async Task SendMessageAsync(SupplierConfiguration config, string body)
+        private async Task SendMessageAsync(ImportRequest config, string body)
         {
             var message = new DiscordMessage("**FAILED IMPORT, CRITICAL FAILURE, DROPPING " + config.Name + "**\n" + body,
                 username: Environment.MachineName,

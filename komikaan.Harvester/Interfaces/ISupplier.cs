@@ -6,6 +6,6 @@ namespace komikaan.Harvester.Interfaces
     public interface ISupplier
     {
         public Task GetFeedAsync();
-        public SupplierConfiguration GetConfiguration();
+        public ImportRequest GetConfiguration();
     }
 }

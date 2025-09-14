@@ -21,7 +21,7 @@ internal class PostgresContext : IDataContext
 
     }
 
-    public async Task MarkStartImportAsync(SupplierConfiguration config)
+    public async Task MarkStartImportAsync(ImportRequest config)
     {
         using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
 
@@ -35,7 +35,7 @@ internal class PostgresContext : IDataContext
          );
     }
 
-    public async Task MarkSuccessImportAsync(SupplierConfiguration config)
+    public async Task MarkSuccessImportAsync(ImportRequest config)
     {
         using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
 
@@ -49,7 +49,7 @@ internal class PostgresContext : IDataContext
          );
     }
 
-    public async Task UpdateImportStatusAsync(SupplierConfiguration config, string importStatus)
+    public async Task UpdateImportStatusAsync(ImportRequest config, string importStatus)
     {
         _logger.LogInformation("Setting state to {state}", importStatus);
         using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
@@ -66,7 +66,7 @@ internal class PostgresContext : IDataContext
          );
     }
 
-    public async Task MarkDownloadFailure(SupplierConfiguration config)
+    public async Task MarkDownloadFailure(ImportRequest config)
     {
         using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
 
@@ -80,7 +80,7 @@ internal class PostgresContext : IDataContext
          );
     }
 
-    public async Task CleanOldStopDataAsync(SupplierConfiguration config)
+    public async Task CleanOldStopDataAsync(ImportRequest config)
     {
         using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
 
@@ -91,7 +91,7 @@ internal class PostgresContext : IDataContext
     }
 
 
-    public async Task DeleteOldDataAsync(SupplierConfiguration config)
+    public async Task DeleteOldDataAsync(ImportRequest config)
     {
         _logger.LogWarning("Moving to last import");
         using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
@@ -106,7 +106,7 @@ internal class PostgresContext : IDataContext
           );
     }
 
-    public async Task<List<SupplierTypeMapping>?> GetTypeMappingsAsync(SupplierConfiguration config)
+    public async Task<List<SupplierTypeMapping>?> GetTypeMappingsAsync(ImportRequest config)
     {
         using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
 

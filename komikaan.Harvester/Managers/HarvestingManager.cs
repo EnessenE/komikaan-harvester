@@ -39,7 +39,7 @@ namespace komikaan.Harvester.Managers
         }
 
 
-        private async Task SendMessageAsync(SupplierConfiguration config, string body)
+        private async Task SendMessageAsync(ImportRequest config, string body)
         {
             var message = new DiscordMessage("**Import progress for " + config.Name + "**\n" + body,
                 username: Environment.MachineName,
@@ -50,7 +50,7 @@ namespace komikaan.Harvester.Managers
         }
 
         // A bit of a mess atm due to a GTFS dependency removal, will clean this up when its not summer
-        public async Task Harvest(SupplierConfiguration config)
+        public async Task Harvest(ImportRequest config)
         {
             Directory.CreateDirectory(@"/app/");
             StaticImportData.CurrentDataOrigin = config.Name;
