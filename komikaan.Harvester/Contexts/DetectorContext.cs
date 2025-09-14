@@ -90,16 +90,21 @@ namespace komikaan.Harvester.Contexts
                     var body = ea.Body.ToArray();
                     var message = Encoding.UTF8.GetString(body);
                     var item = JsonSerializer.Deserialize<ImportRequest>(message);
-                    if (DateTimeOffset.UtcNow - item.ImportRequestedAt > item.DelayImportBy)
+
+                    using (_logger.BeginScope("{name} - {import}", item.Name, item.ImportId))
                     {
-                        await StartImport(ea, item);
-                        importRunning = false;
-                    }
-                    else
-                    {
-                        _logger.LogInformation($"{ea.DeliveryTag} is being artifically delayed");
-                        await Task.Delay(TimeSpan.FromMinutes(1));
-                        _channel.BasicNack(ea.DeliveryTag, false, true);
+                        if (DateTimeOffset.UtcNow - item.ImportRequestedAt > item.DelayImportBy)
+                        {
+                            await StartImport(ea, item);
+                            importRunning = false;
+                        }
+                        else
+                        {
+                            _logger.LogInformation($"{item.Name} - {item.QueuedImportId} is being artifically delayed as it was requested at {item.ImportRequestedAt:D}");
+                            await Task.Delay(TimeSpan.FromMinutes(1));
+                            _channel.BasicNack(ea.DeliveryTag, false, true);
+                            importRunning = false;
+                        }
                     }
                 }
                 else
@@ -107,7 +112,7 @@ namespace komikaan.Harvester.Contexts
                     //This is a hack because I want to use RabbitMQ and that doesn't like long running tasks
                     //note: Why don't you just close the consumer?
                     //quick look over there!
-                    _logger.LogInformation("Got an early message, waiting and NACKing it");
+                    _logger.LogInformation("Got an early message, waiting and NACKing and requeuing it");
                     await Task.Delay(TimeSpan.FromMinutes(1));
                     _channel.BasicNack(ea.DeliveryTag, false, true);
                 }
@@ -139,13 +144,10 @@ namespace komikaan.Harvester.Contexts
 
         private async Task ProcessMessageAsync(ImportRequest item)
         {
-            using (_logger.BeginScope("{name} - {import}", item.Name, item.ImportId))
-            {
-                _logger.LogInformation("Starting an import", item.Name);
-                await _dataContext.MarkStartImportAsync(item);
-                await _dataContext.UpdateImportStatusAsync(item, "Started");
-                await _harvestingManager.Harvest(item);
-            }
+            await _dataContext.MarkStartImportAsync(item);
+            await _dataContext.UpdateImportStatusAsync(item, "Started");
+            await _harvestingManager.Harvest(item);
+           
         }
 
 
