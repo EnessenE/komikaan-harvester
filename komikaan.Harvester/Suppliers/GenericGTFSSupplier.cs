@@ -33,7 +33,7 @@ public class GenericGTFSSupplier
         _gardenerContext = gardenerContext;
     }
 
-    public async Task RetrieveFeed(SupplierConfiguration supplierConfig)
+    public async Task RetrieveFeed(ImportRequest supplierConfig)
     {
         await _dataContext.UpdateImportStatusAsync(supplierConfig, "Clearing directories");
         CreateClearDirectories();
@@ -185,7 +185,7 @@ public class GenericGTFSSupplier
         await LogMessage(supplierConfig, "Success", false);
     }
 
-    private async Task LogMessage(SupplierConfiguration supplierConfig, string message, bool discord)
+    private async Task LogMessage(ImportRequest supplierConfig, string message, bool discord)
     {
         _logger.LogInformation(message);
         await _dataContext.UpdateImportStatusAsync(supplierConfig, message);
@@ -195,7 +195,7 @@ public class GenericGTFSSupplier
         }
     }
 
-    private Task NotifyAsync(SupplierConfiguration supplier, List<PSQLStop> stops)
+    private Task NotifyAsync(ImportRequest supplier, List<PSQLStop> stops)
     {
         _logger.LogInformation("Notifying gardeners");
         foreach (var stop in stops)
@@ -234,7 +234,7 @@ public class GenericGTFSSupplier
         _logger.LogInformation("Created/Cleared working directories");
     }
 
-    private async Task DownloadFeed(SupplierConfiguration supplier)
+    private async Task DownloadFeed(ImportRequest supplier)
     {
         if (supplier.RetrievalType == RetrievalType.REST)
         {
@@ -276,7 +276,7 @@ public class GenericGTFSSupplier
             throw new NotImplementedException("Unsupported retrievaltype");
         }
     }
-    private async Task SendMessageAsync(string body, SupplierConfiguration supplier)
+    private async Task SendMessageAsync(string body, ImportRequest supplier)
     {
         _logger.LogInformation(body);
         var message = new DiscordMessage("**Import progress for " + supplier.Name + "**\n" + body,

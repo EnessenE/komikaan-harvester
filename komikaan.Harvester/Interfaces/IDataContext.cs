@@ -4,11 +4,11 @@ namespace komikaan.Harvester.Interfaces;
 
 public interface IDataContext
 {
-    Task MarkDownloadFailure(SupplierConfiguration config);
-    Task CleanOldStopDataAsync(SupplierConfiguration config);
-    Task DeleteOldDataAsync(SupplierConfiguration config);
-    Task<List<SupplierTypeMapping>?> GetTypeMappingsAsync(SupplierConfiguration config);
-    Task MarkStartImportAsync(SupplierConfiguration config);
-    Task MarkSuccessImportAsync(SupplierConfiguration config);
-    Task UpdateImportStatusAsync(SupplierConfiguration config, string importStatus);
+    Task MarkDownloadFailure(ImportRequest config);
+    Task CleanOldStopDataAsync(ImportRequest config);
+    Task DeleteOldDataAsync(ImportRequest config);
+    Task<List<SupplierTypeMapping>?> GetTypeMappingsAsync(ImportRequest config);
+    Task MarkStartImportAsync(ImportRequest config);
+    Task MarkSuccessImportAsync(ImportRequest config);
+    Task UpdateImportStatusAsync(ImportRequest config, string importStatus);
 }

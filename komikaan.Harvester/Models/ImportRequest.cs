@@ -1,6 +1,6 @@
 ﻿namespace komikaan.Common.Models;
 
-public class SupplierConfiguration
+public class ImportRequest
 {
     public required RetrievalType RetrievalType { get; set; }
     public required SupplierType DataType { get; set; }
@@ -21,4 +21,8 @@ public class SupplierConfiguration
     /// If marked as pending, a file detecter should ignore this supplier
     /// </summary>
     public bool DownloadPending { get; set; }
+    public Guid QueuedImportId { get; set; }
+
+    public DateTimeOffset ImportRequestedAt { get; set; }
+    public TimeSpan DelayImportBy { get; set; } = TimeSpan.Zero;
 }
