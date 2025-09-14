@@ -100,7 +100,7 @@ namespace komikaan.Harvester.Contexts
                         }
                         else
                         {
-                            _logger.LogInformation($"{item.Name} - {item.QueuedImportId} is being artifically delayed as it was requested at {item.ImportRequestedAt:D}");
+                            _logger.LogInformation($"{item.Name} - {item.QueuedImportId} is being artifically delayed as it was requested at {item.ImportRequestedAt:R}");
                             await Task.Delay(TimeSpan.FromMinutes(1));
                             _channel.BasicNack(ea.DeliveryTag, false, true);
                             importRunning = false;
