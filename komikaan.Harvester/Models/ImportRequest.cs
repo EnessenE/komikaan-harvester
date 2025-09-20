@@ -25,4 +25,6 @@ public class ImportRequest
 
     public DateTimeOffset ImportRequestedAt { get; set; }
     public TimeSpan DelayImportBy { get; set; } = TimeSpan.Zero;
+    public string? HeaderKey { get; set; }
+    public string? HeaderValue { get; set; }
 }

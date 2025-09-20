@@ -244,9 +244,14 @@ public class GenericGTFSSupplier
             {
                 UserAgent = $"harvester/komikaan.nl/{GetType().Assembly.GetName().Version} (enes@reasulus.nl)"
             };
-
+            
             var client = new RestClient(options);
             var request = new RestRequest() { Method = Method.Get };
+
+            if (!string.IsNullOrWhiteSpace(supplier.HeaderKey))
+            {
+                request.AddHeader(supplier.HeaderKey, supplier.HeaderValue);
+            }
 
             _logger.LogInformation("Request generated towards {url}", supplier.Url);
 
