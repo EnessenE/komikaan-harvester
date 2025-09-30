@@ -100,7 +100,7 @@ namespace komikaan.Harvester.Contexts
                         }
                         else
                         {
-                            _logger.LogInformation($"{item.Name} - {item.QueuedImportId} is being artifically delayed as it was requested at {item.ImportRequestedAt:R}");
+                            _logger.LogInformation($"{item.Name} - {item.QueuedImportId} is being artifically delayed as it was requested at {item.ImportRequestedAt:R} but delayed by {item.DelayImportBy}");
                             await Task.Delay(TimeSpan.FromMinutes(1));
                             _channel.BasicNack(ea.DeliveryTag, false, true);
                             importRunning = false;
@@ -127,6 +127,7 @@ namespace komikaan.Harvester.Contexts
         {
             try
             {
+                _logger.LogInformation("Import accepted");
                 _channel.BasicAck(ea.DeliveryTag, false);
                 await ProcessMessageAsync(item);
             }
