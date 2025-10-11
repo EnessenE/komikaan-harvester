@@ -49,6 +49,7 @@ public class GenericGTFSSupplier
             CacheFields = true,
             HeaderValidated = null,
             MissingFieldFound = null,
+            TrimOptions = TrimOptions.Trim
         };
 
         await LogMessage(supplierConfig, "Reading agencies", false);
