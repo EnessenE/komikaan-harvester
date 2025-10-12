@@ -44,9 +44,10 @@ public class GTFSContext
             _logger.LogInformation("Creating a partition");
             var item = entities.First();
 
+            var partitionName = $"{supplierConfig.Name.ToString().Replace("-", "_").Replace(" ", "_").Replace(".", "_")}_{supplierConfig.ImportId.ToString().Replace("-", "_")}".Remove(62);
             using (var connection = _dataSource.CreateConnection())
             {
-                var query = $"CREATE TABLE IF NOT EXISTS public.stop_times2_{supplierConfig.Name.ToString().Replace("-", "_").Replace(" ", "_").Replace(".", "_")}_{supplierConfig.ImportId.ToString().Replace("-", "_")} PARTITION OF public.stop_times2\n";
+                var query = $"CREATE TABLE IF NOT EXISTS public.{partitionName} PARTITION OF public.stop_times2\n";
                 query += $"FOR VALUES FROM ('{supplierConfig.Name}', '{supplierConfig.ImportId}')\n";
                 query += $"TO ('{supplierConfig.Name}', '{supplierConfig.ImportId.Increment()}')\n";
 
