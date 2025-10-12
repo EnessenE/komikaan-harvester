@@ -44,7 +44,9 @@ public class GTFSContext
             _logger.LogInformation("Creating a partition");
             var item = entities.First();
 
-            var partitionName = $"{supplierConfig.Name.ToString().Replace("-", "_").Replace(" ", "_").Replace(".", "_")}_{supplierConfig.ImportId.ToString().Replace("-", "_")}".Remove(62);
+            var partitionName = $"{supplierConfig.Name.ToString().Replace("-", "_").Replace(" ", "_").Replace(".", "_")}_{supplierConfig.ImportId.ToString().Replace("-", "_")}";
+            partitionName = partitionName.Length <= 62 ? partitionName : partitionName.Substring(0, 62);
+
             using (var connection = _dataSource.CreateConnection())
             {
                 var query = $"CREATE TABLE IF NOT EXISTS public.{partitionName} PARTITION OF public.stop_times2\n";
