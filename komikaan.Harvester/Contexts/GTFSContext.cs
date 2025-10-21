@@ -91,6 +91,12 @@ public class GTFSContext
         {
             _logger.LogInformation("Deleting irrelevant partitions");
 
+            // This is called, kicking the can down the road
+            // If we have 2 imports with the start being the same guid, then being trimmed to 62 chars, that causes us to lose both partitions
+            var partitionName = $"{supplierConfig.Name.ToString().Replace("-", "_").Replace(" ", "_").Replace(".", "_")}_{supplierConfig.ImportId.ToString().Replace("-", "_")}";
+            partitionName = partitionName.Length <= 62 ? partitionName : partitionName.Substring(0, 62);
+
+
             using (var connection = _dataSource.CreateConnection())
             {
                 var query = $@"DO $$ 
@@ -102,9 +108,9 @@ public class GTFSContext
             SELECT tablename
             FROM pg_tables
             WHERE schemaname = 'public'
-    		AND tablename LIKE 'stop_times2_{supplierConfig.Name.ToString().Replace("-", "_").Replace(" ", "_").Replace(".", "_")}_%'
+    		AND tablename LIKE '{supplierConfig.Name.ToString().Replace("-", "_").Replace(" ", "_").Replace(".", "_")}_%'
     		AND tablename NOT LIKE 'stop_times2_default'
-            AND tablename NOT LIKE 'stop_times2_{supplierConfig.Name.ToString().Replace("-", "_").Replace(" ", "_").Replace(".", "_")}_{supplierConfig.ImportId.ToString().Replace("-", "_")}'
+            AND tablename NOT LIKE '{partitionName}'
         LOOP
             -- Dynamically drop each partition
             EXECUTE 'DROP TABLE IF EXISTS public.' || partition.tablename;
