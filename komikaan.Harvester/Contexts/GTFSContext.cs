@@ -39,17 +39,18 @@ public class GTFSContext
 
     private async Task UpsertEntityAsync<T>(ImportRequest supplierConfig, string procedureName, string tvpTypeName, IEnumerable<T> entities, int batchSize, bool partioned) where T : GTFSStaticObject
     {
+        var partitionName = $"{supplierConfig.Name.ToString().Replace("-", "_").Replace(" ", "_").Replace(".", "_")}_{supplierConfig.ImportId.ToString().Replace("-", "_")}";
+        partitionName = partitionName.Length <= 62 ? partitionName : partitionName.Substring(0, 62);
+
         if (partioned)
         {
             _logger.LogInformation("Creating a partition");
             var item = entities.First();
 
-            var partitionName = $"{supplierConfig.Name.ToString().Replace("-", "_").Replace(" ", "_").Replace(".", "_")}_{supplierConfig.ImportId.ToString().Replace("-", "_")}";
-            partitionName = partitionName.Length <= 62 ? partitionName : partitionName.Substring(0, 62);
 
             using (var connection = _dataSource.CreateConnection())
             {
-                var query = $"CREATE TABLE IF NOT EXISTS public.{partitionName} PARTITION OF public.stop_times2\n";
+                var query = $"CREATE TABLE IF NOT EXISTS public.'{partitionName}' PARTITION OF public.stop_times2\n";
                 query += $"FOR VALUES FROM ('{supplierConfig.Name}', '{supplierConfig.ImportId}')\n";
                 query += $"TO ('{supplierConfig.Name}', '{supplierConfig.ImportId.Increment()}')\n";
 
@@ -60,6 +61,7 @@ public class GTFSContext
                 await command.ExecuteNonQueryAsync();
             }
         }
+
         var stopwatch = Stopwatch.StartNew();
         _logger.LogInformation("Importing to {procedure}", procedureName);
         var chunks = entities.Chunk(batchSize).ToList();
@@ -93,7 +95,6 @@ public class GTFSContext
 
             // This is called, kicking the can down the road
             // If we have 2 imports with the start being the same guid, then being trimmed to 62 chars, that causes us to lose both partitions
-            var partitionName = $"{supplierConfig.Name.ToString().Replace("-", "_").Replace(" ", "_").Replace(".", "_")}_{supplierConfig.ImportId.ToString().Replace("-", "_")}";
             partitionName = partitionName.Length <= 62 ? partitionName : partitionName.Substring(0, 62);
 
 

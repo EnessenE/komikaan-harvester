@@ -1,5 +1,4 @@
-﻿using komikaan.Common.Enums;
-using komikaan.GTFS.Models.Static.Enums;
+﻿using komikaan.GTFS.Models.Static.Enums;
 using komikaan.GTFS.Models.Static.Models;
 using komikaan.Harvester.Models;
 
@@ -91,7 +90,7 @@ namespace komikaan.Harvester.Adapters
         /// <summary>
         /// Maps to stops_type.stop_type_data
         /// </summary>
-        public int StopTypeData { get=> (int)StopType ; set=>StopType = (StopType)value; }
+        public int StopTypeData { get=> (int)StopType ; set=>StopType = (RouteType)value; }
 
         /// <summary>
         /// Maps to stops_type.data_origin
@@ -114,6 +113,6 @@ namespace komikaan.Harvester.Adapters
         public Guid ImportId { get; set; } = StaticImportData.CurrentImportId;
 
 
-        public StopType StopType { get; set; } = StopType.Unknown;
+        public RouteType StopType { get; set; } = RouteType.Funicular;
     }
 }
