@@ -98,11 +98,6 @@ namespace komikaan.Harvester.Adapters
         public string DataOrigin { get; set; } = StaticImportData.CurrentDataOrigin;
 
         /// <summary>
-        /// Maps to stops_type.internal_id
-        /// </summary>
-        public Guid InternalId { get; set; } = Guid.NewGuid();
-
-        /// <summary>
         /// Maps to stops_type.last_updated
         /// </summary>
         public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
