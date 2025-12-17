@@ -50,7 +50,7 @@ public class GTFSContext
 
             using (var connection = _dataSource.CreateConnection())
             {
-                var query = $"CREATE TABLE IF NOT EXISTS public.'{partitionName}' PARTITION OF public.stop_times2\n";
+                var query = $"CREATE TABLE IF NOT EXISTS public.{partitionName} PARTITION OF public.stop_times\n";
                 query += $"FOR VALUES FROM ('{supplierConfig.Name}', '{supplierConfig.ImportId}')\n";
                 query += $"TO ('{supplierConfig.Name}', '{supplierConfig.ImportId.Increment()}')\n";
 
@@ -104,13 +104,13 @@ public class GTFSContext
     DECLARE
         partition RECORD;
     BEGIN
-        -- Loop through all partitions of the stop_times2 table
+        -- Loop through all partitions of the stop_times table
         FOR partition IN 
             SELECT tablename
             FROM pg_tables
             WHERE schemaname = 'public'
     		AND tablename LIKE '{supplierConfig.Name.ToString().Replace("-", "_").Replace(" ", "_").Replace(".", "_")}_%'
-    		AND tablename NOT LIKE 'stop_times2_default'
+    		AND tablename NOT LIKE 'stop_times_default'
             AND tablename NOT LIKE '{partitionName}'
         LOOP
             -- Dynamically drop each partition
@@ -214,7 +214,7 @@ public class GTFSContext
     {
         if (stopTimes.Any())
         {
-            await UpsertEntityAsync(supplierConfig, "public.upsert_stop_times2", "public.stop_times_type", stopTimes, 100000, true);
+            await UpsertEntityAsync(supplierConfig, "public.upsert_stop_times", "public.stop_times_type", stopTimes, 100000, true);
             //await UpsertEntityAsync("public.upsert_stop_times", "public.stop_times_type", ToPsql(stopTimes), 100000, false);
         }
     }
