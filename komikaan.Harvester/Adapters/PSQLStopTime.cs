@@ -12,7 +12,6 @@ namespace komikaan.Harvester.Adapters
     {
 
         public string DataOrigin { get; set; } = StaticImportData.CurrentDataOrigin;
-        public Guid InternalId { get; set; } = Guid.NewGuid();
         public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
         public Guid ImportId { get; set; } = StaticImportData.CurrentImportId;
 
