@@ -52,6 +52,8 @@ namespace komikaan.Harvester
             }
 
 
+            builder.Services.AddHttpClient();
+
             builder.Services.AddSingleton<GenericGTFSSupplier>();
             builder.Services.AddHostedService<DetectorContext>();
             builder.Services.AddSingleton<IDataContext, PostgresContext>();
