@@ -33,7 +33,7 @@ public class GenericGTFSSupplier
         _gardenerContext = gardenerContext;
         _httpClient = httpClient;
         var contactPoint = Environment.GetEnvironmentVariable("Komikaan_ContactPoint") ?? throw new ArgumentNullException("contactPoint");
-        _httpClient.DefaultRequestHeaders.Add("User-Agent", $"detector/komikaan.nl/{GetType().Assembly.GetName().Version} ({contactPoint})");
+        _httpClient.DefaultRequestHeaders.Add("User-Agent", $"detector/komikaan.nl {GetType().Assembly.GetName().Version} ({contactPoint})");
     }
 
     public async Task RetrieveFeed(ImportRequest supplierConfig)
