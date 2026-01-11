@@ -7,7 +7,6 @@ using komikaan.Harvester.Adapters;
 using komikaan.Harvester.Contexts;
 using komikaan.Harvester.Interfaces;
 using komikaan.Harvester.Managers;
-using RestSharp;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;
@@ -23,14 +22,18 @@ public class GenericGTFSSupplier
     private IDataContext _dataContext;
     private GTFSContext _gtfsContext;
     private IGardenerContext _gardenerContext;
+    private readonly HttpClient _httpClient;
 
-    public GenericGTFSSupplier(DiscordWebhookClient discordWebhookClient, ILogger<GenericGTFSSupplier> logger, IDataContext dataContext, GTFSContext gtfsContext, IGardenerContext gardenerContext)
+    public GenericGTFSSupplier(DiscordWebhookClient discordWebhookClient, ILogger<GenericGTFSSupplier> logger, IDataContext dataContext, GTFSContext gtfsContext, IGardenerContext gardenerContext, HttpClient httpClient)
     {
         _discordWebHookClient = discordWebhookClient;
         _logger = logger;
         _dataContext = dataContext;
         _gtfsContext = gtfsContext;
         _gardenerContext = gardenerContext;
+        _httpClient = httpClient;
+        var contactPoint = Environment.GetEnvironmentVariable("Komikaan_ContactPoint") ?? throw new ArgumentNullException("contactPoint");
+        _httpClient.DefaultRequestHeaders.Add("User-Agent", $"detector/komikaan.nl/{GetType().Assembly.GetName().Version} ({contactPoint})");
     }
 
     public async Task RetrieveFeed(ImportRequest supplierConfig)
@@ -241,32 +244,41 @@ public class GenericGTFSSupplier
         {
             await _dataContext.UpdateImportStatusAsync(supplier, "Downloading feed");
 
-            var options = new RestClientOptions(supplier.Url)
+            var request = new HttpRequestMessage(HttpMethod.Get, supplier.Url);
+
+            if (!string.IsNullOrEmpty(supplier.ETag))
             {
-                UserAgent = $"harvester/komikaan.nl/{GetType().Assembly.GetName().Version} (enes@reasulus.nl)"
-            };
-            
-            var client = new RestClient(options);
-            var request = new RestRequest() { Method = Method.Get };
+                request.Headers.IfNoneMatch.Add(new System.Net.Http.Headers.EntityTagHeaderValue(supplier.ETag));
+            }
 
             if (!string.IsNullOrWhiteSpace(supplier.HeaderKey))
             {
-                request.AddHeader(supplier.HeaderKey, supplier.HeaderValue);
+                request.Headers.Add(supplier.HeaderKey, supplier.HeaderValue);
             }
+
 
             _logger.LogInformation("Request generated towards {url}", supplier.Url);
 
-            var response = await client.ExecuteAsync(request);
+            var response = await _httpClient.SendAsync(request);
 
-            if (response.IsSuccessful && response.RawBytes != null)
+            if (response.IsSuccessStatusCode)
             {
-                await File.WriteAllBytesAsync(_rawPath + @"/gtfs_file.zip", response.RawBytes);
-                await _dataContext.UpdateImportStatusAsync(supplier, "Feed download complete");
+                var data = await response.Content.ReadAsByteArrayAsync();
+                if (data != null)
+                {
+                    await File.WriteAllBytesAsync(_rawPath + @"/gtfs_file.zip", data);
+                    await _dataContext.UpdateImportStatusAsync(supplier, "Feed download complete");
+                }
+                else
+                {
+                    _logger.LogWarning("Code: {StatusCode} but no data received from feed", response.StatusCode);
+                    await _dataContext.UpdateImportStatusAsync(supplier, $"Code: {response.StatusCode} but no data received from feed");
+                }
             }
             else
             {
                 _logger.LogWarning("Failed to download feed. Status code: {statusCode}, Error: {errorMessage}",
-                    response.StatusCode, response.ErrorMessage);
+                    response.StatusCode, response.ReasonPhrase);
 
                 await _dataContext.UpdateImportStatusAsync(supplier,
                     $"Download failed. Status code: {response.StatusCode}");
