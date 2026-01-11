@@ -246,11 +246,6 @@ public class GenericGTFSSupplier
 
             var request = new HttpRequestMessage(HttpMethod.Get, supplier.Url);
 
-            if (!string.IsNullOrEmpty(supplier.ETag))
-            {
-                request.Headers.IfNoneMatch.Add(new System.Net.Http.Headers.EntityTagHeaderValue(supplier.ETag));
-            }
-
             if (!string.IsNullOrWhiteSpace(supplier.HeaderKey))
             {
                 request.Headers.Add(supplier.HeaderKey, supplier.HeaderValue);
