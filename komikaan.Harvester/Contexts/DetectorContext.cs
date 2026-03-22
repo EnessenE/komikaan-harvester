@@ -17,6 +17,7 @@ namespace komikaan.Harvester.Contexts
         private IModel _channel;
         private IDataContext _dataContext;
         private readonly IConfiguration _configuration;
+        private CancellationToken _stoppingToken;
 
         public DetectorContext(ILogger<DetectorContext> logger, HarvestingManager harvestingManager, DiscordWebhookClient discordWebHookClient, IConfiguration configuration, IDataContext dataContext)
         {
@@ -30,6 +31,8 @@ namespace komikaan.Harvester.Contexts
 
         public async Task StartAsync(CancellationToken token)
         {
+            _stoppingToken = token;
+
             if (_configuration.GetValue("localtesting", false))
             {
                 _logger.LogWarning("Running in local test mode");
@@ -46,7 +49,7 @@ namespace komikaan.Harvester.Contexts
                     LastAttempt = null,
                     LastChecked = DateTimeOffset.UtcNow,
                     DownloadPending = false
-                });
+                }, token);
             }
             else
             {
@@ -94,13 +97,13 @@ namespace komikaan.Harvester.Contexts
                     {
                         if (DateTimeOffset.UtcNow - item.ImportRequestedAt > item.DelayImportBy)
                         {
-                            await StartImport(ea, item);
+                            await StartImport(ea, item, _stoppingToken);
                             importRunning = false;
                         }
                         else
                         {
                             _logger.LogInformation($"{item.Name} - {item.QueuedImportId} is being artifically delayed as it was requested at {item.ImportRequestedAt:R} but delayed by {item.DelayImportBy}");
-                            await Task.Delay(TimeSpan.FromMinutes(1));
+                            await Task.Delay(TimeSpan.FromMinutes(1), _stoppingToken);
                             _channel.BasicNack(ea.DeliveryTag, false, true);
                             importRunning = false;
                         }
@@ -112,7 +115,7 @@ namespace komikaan.Harvester.Contexts
                     //note: Why don't you just close the consumer?
                     //quick look over there!
                     _logger.LogInformation("Got an early message, waiting and NACKing and requeuing it");
-                    await Task.Delay(TimeSpan.FromMinutes(1));
+                    await Task.Delay(TimeSpan.FromMinutes(1), _stoppingToken);
                     _channel.BasicNack(ea.DeliveryTag, false, true);
                 }
             };
@@ -122,13 +125,13 @@ namespace komikaan.Harvester.Contexts
             _logger.LogInformation("Started, waiting for a new import");
         }
 
-        private async Task StartImport(BasicDeliverEventArgs ea, ImportRequest item)
+        private async Task StartImport(BasicDeliverEventArgs ea, ImportRequest item, CancellationToken cancellationToken)
         {
             try
             {
                 _logger.LogInformation("Import accepted");
                 _channel.BasicAck(ea.DeliveryTag, false);
-                await ProcessMessageAsync(item);
+                await ProcessMessageAsync(item, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -142,11 +145,11 @@ namespace komikaan.Harvester.Contexts
             return Task.CompletedTask;
         }
 
-        private async Task ProcessMessageAsync(ImportRequest item)
+        private async Task ProcessMessageAsync(ImportRequest item, CancellationToken cancellationToken)
         {
             await _dataContext.MarkStartImportAsync(item);
             await _dataContext.UpdateImportStatusAsync(item, "Started");
-            await _harvestingManager.Harvest(item);
+            await _harvestingManager.Harvest(item, cancellationToken);
            
         }
 
