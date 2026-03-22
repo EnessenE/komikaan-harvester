@@ -3,7 +3,9 @@ using JNogueira.Discord.WebhookClient;
 using komikaan.Harvester.Contexts;
 using komikaan.Harvester.Interfaces;
 using komikaan.Harvester.Managers;
+using komikaan.Harvester.Settings;
 using komikaan.Harvester.Suppliers;
+using Microsoft.Extensions.Options;
 using Serilog;
 
 namespace komikaan.Harvester
@@ -36,6 +38,9 @@ namespace komikaan.Harvester
 
 
             AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
+            builder.Services.Configure<KomikaanSettings>(
+                builder.Configuration.GetSection(KomikaanSettings.SectionName));
 
             builder.Services.AddSingleton<HarvestingManager>();
             builder.Services.AddHostedService(x => x.GetRequiredService<HarvestingManager>());
@@ -79,9 +84,15 @@ namespace komikaan.Harvester
 
         private static void FixDiscordClient(IServiceCollection services)
         {
-            services.AddHttpClient<DiscordWebhookHttpClient>("DiscordWebhookHttpClient", delegate (HttpClient client)
+            services.AddHttpClient<DiscordWebhookHttpClient>("DiscordWebhookHttpClient", (provider, client) =>
             {
-                client.BaseAddress = new Uri("https://discord.com/api/webhooks/1249326974883725343/hMojhofrsjrsY9Sl0kvaffMh6RGDltMe5W6sDrunND3zppONAI8Y00HaEUcfy7QumsOJ");
+                var settings = provider.GetRequiredService<IOptions<KomikaanSettings>>().Value;
+                if (string.IsNullOrWhiteSpace(settings.DiscordWebhookUrl))
+                {
+                    throw new ArgumentNullException("Komikaan:DiscordWebhookUrl", "Should be set for the Discord webhook client");
+                }
+
+                client.BaseAddress = new Uri(settings.DiscordWebhookUrl);
                 client.Timeout = TimeSpan.FromSeconds(30.0);
             });
             services.AddSingleton<DiscordWebhookClient>();

@@ -36,67 +36,66 @@ public class GTFSContext
         _dataSource = builder.Build();
     }
 
-
-    private async Task UpsertEntityAsync<T>(ImportRequest supplierConfig, string procedureName, string tvpTypeName, IEnumerable<T> entities, int batchSize, bool partioned) where T : GTFSStaticObject
+    private async Task UpsertEntityAsync<T>(ImportRequest supplierConfig, string procedureName, string tvpTypeName, IAsyncEnumerable<T> entities, int batchSize, bool partioned, CancellationToken cancellationToken) where T : GTFSStaticObject
     {
         var partitionName = $"{supplierConfig.Name.ToString().Replace("-", "_").Replace(" ", "_").Replace(".", "_")}_{supplierConfig.ImportId.ToString().Replace("-", "_")}";
         partitionName = partitionName.Length <= 62 ? partitionName : partitionName.Substring(0, 62);
 
-        if (partioned)
-        {
-            _logger.LogInformation("Creating a partition");
-            var item = entities.First();
-
-
-            using (var connection = _dataSource.CreateConnection())
-            {
-                var query = $"CREATE TABLE IF NOT EXISTS public.{partitionName} PARTITION OF public.stop_times\n";
-                query += $"FOR VALUES FROM ('{supplierConfig.Name}', '{supplierConfig.ImportId}')\n";
-                query += $"TO ('{supplierConfig.Name}', '{supplierConfig.ImportId.Increment()}')\n";
-
-                _logger.LogInformation("Generated query: {query}", query);
-                var command = new NpgsqlCommand(query, connection);
-                await connection.OpenAsync();
-
-                await command.ExecuteNonQueryAsync();
-            }
-        }
-
         var stopwatch = Stopwatch.StartNew();
         _logger.LogInformation("Importing to {procedure}", procedureName);
-        var chunks = entities.Chunk(batchSize).ToList();
-        _logger.LogInformation("Split into {amount} of chunks of {size}", chunks.Count, batchSize);
-        var totalGrabbed = 0;
+        _logger.LogInformation("Chunk size configured as {size}", batchSize);
 
-        foreach (var chunk in chunks)
+        var totalGrabbed = 0;
+        var hasData = false;
+        var partitionCreated = false;
+        
+        var chunks = entities.Chunk(batchSize);
+        
+        await foreach (var chunk in chunks.WithCancellation(cancellationToken))
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            hasData = true;
+
+            if (partioned && !partitionCreated)
+            {
+                _logger.LogInformation("Creating a partition");
+
+                using (var connection = _dataSource.CreateConnection())
+                {
+                    var query = $"CREATE TABLE IF NOT EXISTS public.{partitionName} PARTITION OF public.stop_times\n";
+                    query += $"FOR VALUES FROM ('{supplierConfig.Name}', '{supplierConfig.ImportId}')\n";
+                    query += $"TO ('{supplierConfig.Name}', '{supplierConfig.ImportId.Increment()}')\n";
+
+                    _logger.LogInformation("Generated query: {query}", query);
+                    var command = new NpgsqlCommand(query, connection);
+                    await connection.OpenAsync(cancellationToken);
+                    await command.ExecuteNonQueryAsync(cancellationToken);
+                }
+
+                partitionCreated = true;
+            }
+
             var chunkWatch = Stopwatch.StartNew();
             totalGrabbed += 1;
-            _logger.LogInformation("Working on {grab}/{total} for {procedureName}", totalGrabbed, chunks.Count(), procedureName);
+            _logger.LogInformation("Working on chunk {grab} for {procedureName}", totalGrabbed, procedureName);
 
             using (var connection = _dataSource.CreateConnection())
             {
-
                 var command = new NpgsqlCommand($"CALL {procedureName}(@items)", connection);
-                await connection.OpenAsync();
+                await connection.OpenAsync(cancellationToken);
 
                 var parameter = command.Parameters.AddWithValue("@items", chunk);
-                parameter.DataTypeName = tvpTypeName + "[]";  // Specify the array of custom composite type
+                parameter.DataTypeName = tvpTypeName + "[]";
 
-                await command.ExecuteNonQueryAsync();
+                await command.ExecuteNonQueryAsync(cancellationToken);
             }
-            _logger.LogInformation("Inserted on {grab}/{total} for {procedureName} in {time}", totalGrabbed, chunks.Count(), procedureName, chunkWatch.Elapsed);
+
+            _logger.LogInformation("Inserted chunk {grab} for {procedureName} in {time}", totalGrabbed, procedureName, chunkWatch.Elapsed);
         }
 
-
-        if (partioned)
+        if (partioned && hasData)
         {
             _logger.LogInformation("Deleting irrelevant partitions");
-
-            // This is called, kicking the can down the road
-            // If we have 2 imports with the start being the same guid, then being trimmed to 62 chars, that causes us to lose both partitions
-            partitionName = partitionName.Length <= 62 ? partitionName : partitionName.Substring(0, 62);
-
 
             using (var connection = _dataSource.CreateConnection())
             {
@@ -116,85 +115,63 @@ public class GTFSContext
             -- Dynamically drop each partition
             EXECUTE 'DROP TABLE IF EXISTS public.' || partition.tablename;
         END LOOP;
-    END $$;".ToLowerInvariant(); ;
+    END $$;".ToLowerInvariant();
 
                 _logger.LogInformation("Generated query: {query}", query);
                 var command = new NpgsqlCommand(query, connection);
-                await connection.OpenAsync();
-
-                await command.ExecuteNonQueryAsync();
+                await connection.OpenAsync(cancellationToken);
+                await command.ExecuteNonQueryAsync(cancellationToken);
             }
-
         }
+
         _logger.LogInformation("Finished importing to {procedure} in {time}", procedureName, stopwatch.Elapsed);
     }
 
-
-
     //    // Bulk upsert for agencies
-    public async Task UpsertAgenciesAsync(ImportRequest supplierConfig, IEnumerable<PSQLAgency> agencies)
+    public Task UpsertAgenciesAsync(ImportRequest supplierConfig, IAsyncEnumerable<PSQLAgency> agencies, CancellationToken cancellationToken = default)
     {
-        if (agencies.Any())
-        {
-            const string procedureName = "public.upsert_agencies";
-            const string tvpTypeName = "public.agencies_type";
-            await UpsertEntityAsync(supplierConfig, procedureName, tvpTypeName, agencies, 100, false);
-        }
+        const string procedureName = "public.upsert_agencies";
+        const string tvpTypeName = "public.agencies_type";
+        return UpsertEntityAsync(supplierConfig, procedureName, tvpTypeName, agencies, 100, false, cancellationToken);
     }
 
     //    // Bulk upsert for routes
-    public async Task UpsertRoutesAsync(ImportRequest supplierConfig, IEnumerable<PSQLRoute> routes)
+    public Task UpsertRoutesAsync(ImportRequest supplierConfig, IAsyncEnumerable<PSQLRoute> routes, CancellationToken cancellationToken = default)
     {
-        if (routes.Any())
-        {
-            const string procedureName = "public.upsert_routes";
-            const string tvpTypeName = "public.routes_type";
-            await UpsertEntityAsync(supplierConfig, procedureName, tvpTypeName, routes, 5000, false);
-        }
+        const string procedureName = "public.upsert_routes";
+        const string tvpTypeName = "public.routes_type";
+        return UpsertEntityAsync(supplierConfig, procedureName, tvpTypeName, routes, 5000, false, cancellationToken);
     }
 
-    public async Task UpsertCalendarsAsync(ImportRequest supplierConfig, IEnumerable<PSQLCalendar> calenders)
+    public Task UpsertCalendarsAsync(ImportRequest supplierConfig, IAsyncEnumerable<PSQLCalendar> calenders, CancellationToken cancellationToken = default)
     {
-        if (calenders.Any())
-        {
-            const string procedureName = "public.upsert_calendars";
-            const string tvpTypeName = "public.calendars_type";
-            await UpsertEntityAsync(supplierConfig, procedureName, tvpTypeName, calenders, 5000, false);
-        }
+        const string procedureName = "public.upsert_calendars";
+        const string tvpTypeName = "public.calendars_type";
+        return UpsertEntityAsync(supplierConfig, procedureName, tvpTypeName, calenders, 5000, false, cancellationToken);
     }
 
     // Bulk upsert for stops
-    public async Task UpsertStopsAsync(ImportRequest supplierConfig, IEnumerable<PSQLStop> stops)
+    public Task UpsertStopsAsync(ImportRequest supplierConfig, IAsyncEnumerable<PSQLStop> stops, CancellationToken cancellationToken = default)
     {
-        if (stops.Any())
-        {
-            const string procedureName = "public.upsert_stops";
-            const string tvpTypeName = "public.stops_type";
-            await UpsertEntityAsync(supplierConfig, procedureName, tvpTypeName, stops, 1000, false);
-        }
+        const string procedureName = "public.upsert_stops";
+        const string tvpTypeName = "public.stops_type";
+        return UpsertEntityAsync(supplierConfig, procedureName, tvpTypeName, stops, 1000, false, cancellationToken);
     }
 
     //    // Bulk upsert for trips
-    public async Task UpsertTripsAsync(ImportRequest supplierConfig, IEnumerable<PSQLTrip> trips)
+    public Task UpsertTripsAsync(ImportRequest supplierConfig, IAsyncEnumerable<PSQLTrip> trips, CancellationToken cancellationToken = default)
     {
-        if (trips.Any())
-        {
-            const string procedureName = "public.upsert_trips";
-            const string tvpTypeName = "public.trips_type";
-            await UpsertEntityAsync(supplierConfig, procedureName, tvpTypeName, trips, 10000, false);
-        }
+        const string procedureName = "public.upsert_trips";
+        const string tvpTypeName = "public.trips_type";
+        return UpsertEntityAsync(supplierConfig, procedureName, tvpTypeName, trips, 10000, false, cancellationToken);
     }
 
     // Bulk upsert for calendar dates
-    public async Task UpsertCalendarDatesAsync(ImportRequest supplierConfig, IEnumerable<PSQLCalendarDate> calendarDates)
+    public Task UpsertCalendarDatesAsync(ImportRequest supplierConfig, IAsyncEnumerable<PSQLCalendarDate> calendarDates, CancellationToken cancellationToken = default)
     {
-        if (calendarDates.Any())
-        {
-            const string procedureName = "public.upsert_calendar_dates";
-            const string tvpTypeName = "public.calendar_dates_type";
-            var item = calendarDates.First();
-            await UpsertEntityAsync(supplierConfig, procedureName, tvpTypeName, calendarDates, 100000, false);
-        }
+        const string procedureName = "public.upsert_calendar_dates";
+        const string tvpTypeName = "public.calendar_dates_type";
+        return UpsertEntityAsync(supplierConfig, procedureName, tvpTypeName, calendarDates, 100000, false, cancellationToken);
     }
 
     //    // Bulk upsert for frequencies
@@ -210,24 +187,16 @@ public class GTFSContext
     //    }
 
     //    // Bulk upsert for stop times
-    public async Task UpsertStopTimesAsync(ImportRequest supplierConfig, IEnumerable<PSQLStopTime> stopTimes)
+    public Task UpsertStopTimesAsync(ImportRequest supplierConfig, IAsyncEnumerable<PSQLStopTime> stopTimes, CancellationToken cancellationToken = default)
     {
-        if (stopTimes.Any())
-        {
-            await UpsertEntityAsync(supplierConfig, "public.upsert_stop_times", "public.stop_times_type", stopTimes, 100000, true);
-            //await UpsertEntityAsync("public.upsert_stop_times", "public.stop_times_type", ToPsql(stopTimes), 100000, false);
-        }
+        return UpsertEntityAsync(supplierConfig, "public.upsert_stop_times", "public.stop_times_type", stopTimes, 100000, true, cancellationToken);
     }
 
     //    // Bulk upsert for shapes
-    public async Task UpsertShapesAsync(ImportRequest supplierConfig, IEnumerable<PSQLShape> shapes)
+    public Task UpsertShapesAsync(ImportRequest supplierConfig, IAsyncEnumerable<PSQLShape> shapes, CancellationToken cancellationToken = default)
     {
-        if (shapes.Any())
-        {
-            const string procedureName = "public.upsert_shapes";
-            const string tvpTypeName = "public.shapes_type";
-            var item = shapes.First();
-            await UpsertEntityAsync(supplierConfig, procedureName, tvpTypeName, shapes, 100000, false);
-        }
+        const string procedureName = "public.upsert_shapes";
+        const string tvpTypeName = "public.shapes_type";
+        return UpsertEntityAsync(supplierConfig, procedureName, tvpTypeName, shapes, 100000, false, cancellationToken);
     }
 }
