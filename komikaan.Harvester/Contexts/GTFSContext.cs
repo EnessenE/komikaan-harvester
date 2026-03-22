@@ -56,6 +56,33 @@ public class GTFSContext
             cancellationToken.ThrowIfCancellationRequested();
             hasData = true;
 
+            var chunkToInsert = chunk;
+            if (procedureName == "public.upsert_stops" && typeof(T) == typeof(PSQLStop))
+            {
+                var dedupedStops = chunk
+                    .Cast<PSQLStop>()
+                    .GroupBy(stop => (stop.DataOrigin ?? string.Empty, stop.Id ?? string.Empty))
+                    .Select(group => group.Last())
+                    .ToArray();
+
+                if (dedupedStops.Length != chunk.Length)
+                {
+                    _logger.LogWarning(
+                        "Filtered {duplicates} duplicate stops in chunk {grab} for {procedureName}",
+                        chunk.Length - dedupedStops.Length,
+                        totalGrabbed + 1,
+                        procedureName);
+                }
+
+                if (dedupedStops.Length == 0)
+                {
+                    totalGrabbed += 1;
+                    continue;
+                }
+
+                chunkToInsert = dedupedStops.Cast<T>().ToArray();
+            }
+
             if (partioned && !partitionCreated)
             {
                 _logger.LogInformation("Creating a partition");
@@ -84,7 +111,7 @@ public class GTFSContext
                 var command = new NpgsqlCommand($"CALL {procedureName}(@items)", connection);
                 await connection.OpenAsync(cancellationToken);
 
-                var parameter = command.Parameters.AddWithValue("@items", chunk);
+                var parameter = command.Parameters.AddWithValue("@items", chunkToInsert);
                 parameter.DataTypeName = tvpTypeName + "[]";
 
                 await command.ExecuteNonQueryAsync(cancellationToken);
