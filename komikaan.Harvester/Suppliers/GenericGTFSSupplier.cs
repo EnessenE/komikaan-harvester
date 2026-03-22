@@ -7,9 +7,12 @@ using komikaan.Harvester.Adapters;
 using komikaan.Harvester.Contexts;
 using komikaan.Harvester.Interfaces;
 using komikaan.Harvester.Managers;
+using komikaan.Harvester.Settings;
+using Microsoft.Extensions.Options;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;
+using System.Runtime.CompilerServices;
 namespace komikaan.Harvester.Suppliers;
 
 
@@ -24,7 +27,7 @@ public class GenericGTFSSupplier
     private IGardenerContext _gardenerContext;
     private readonly HttpClient _httpClient;
 
-    public GenericGTFSSupplier(DiscordWebhookClient discordWebhookClient, ILogger<GenericGTFSSupplier> logger, IDataContext dataContext, GTFSContext gtfsContext, IGardenerContext gardenerContext, HttpClient httpClient)
+    public GenericGTFSSupplier(DiscordWebhookClient discordWebhookClient, ILogger<GenericGTFSSupplier> logger, IDataContext dataContext, GTFSContext gtfsContext, IGardenerContext gardenerContext, HttpClient httpClient, IOptions<KomikaanSettings> komikaanSettings)
     {
         _discordWebHookClient = discordWebhookClient;
         _logger = logger;
@@ -32,16 +35,22 @@ public class GenericGTFSSupplier
         _gtfsContext = gtfsContext;
         _gardenerContext = gardenerContext;
         _httpClient = httpClient;
-        var contactPoint = Environment.GetEnvironmentVariable("Komikaan_ContactPoint") ?? throw new ArgumentNullException("contactPoint");
+        var contactPoint = komikaanSettings.Value.ContactPoint;
+        if (string.IsNullOrWhiteSpace(contactPoint))
+        {
+            throw new ArgumentNullException("contactPoint", "Should be set for the useragent");
+        }
         _httpClient.DefaultRequestHeaders.Add("User-Agent", $"detector/komikaan.nl {GetType().Assembly.GetName().Version} ({contactPoint})");
     }
 
-    public async Task RetrieveFeed(ImportRequest supplierConfig)
+    public async Task RetrieveFeed(ImportRequest supplierConfig, CancellationToken token)
     {
+        token.ThrowIfCancellationRequested();
+
         await _dataContext.UpdateImportStatusAsync(supplierConfig, "Clearing directories");
         CreateClearDirectories();
 
-        await DownloadFeed(supplierConfig);
+        await DownloadFeed(supplierConfig, token);
 
         await _dataContext.UpdateImportStatusAsync(supplierConfig, "Extracting files");
 
@@ -67,9 +76,8 @@ public class GenericGTFSSupplier
                 {
                     _logger.LogInformation($"Found a file with {csv?.ColumnCount} columns");
                     csv.Context.RegisterClassMap<AgencyMap>();
-                    var records = csv.GetRecords<PSQLAgency>().ToList();
-                    _logger.LogInformation($"Found a feed with {records?.Count()} agencies");
-                    await _gtfsContext.UpsertAgenciesAsync(supplierConfig, records);
+                    var records = csv.GetRecordsAsync<PSQLAgency>();
+                    await _gtfsContext.UpsertAgenciesAsync(supplierConfig, records, token);
                 }
             }
         }
@@ -82,9 +90,9 @@ public class GenericGTFSSupplier
                 using (var csv = new CsvReader(reader, config))
                 {
                     csv.Context.RegisterClassMap<StopTimeMap>();
-                    var records = csv.GetRecords<PSQLStopTime>();
+                    var records = csv.GetRecordsAsync<PSQLStopTime>();
                     await LogMessage(supplierConfig, "Importing stoptimes", false);
-                    await _gtfsContext.UpsertStopTimesAsync(supplierConfig, records);
+                    await _gtfsContext.UpsertStopTimesAsync(supplierConfig, records, token);
                 }
             }
         }
@@ -99,8 +107,8 @@ public class GenericGTFSSupplier
                 using (var csv = new CsvReader(reader, config))
                 {
                     csv.Context.RegisterClassMap<CalendarDateMap>();
-                    var records = csv.GetRecords<PSQLCalendarDate>();
-                    await _gtfsContext.UpsertCalendarDatesAsync(supplierConfig, records.ToList());
+                    var records = csv.GetRecordsAsync<PSQLCalendarDate>();
+                    await _gtfsContext.UpsertCalendarDatesAsync(supplierConfig, records, token);
                 }
             }
 
@@ -115,8 +123,8 @@ public class GenericGTFSSupplier
             using (var csv = new CsvReader(reader, config))
             {
                 csv.Context.RegisterClassMap<RouteMap>();
-                var records = csv.GetRecords<PSQLRoute>();
-                await _gtfsContext.UpsertRoutesAsync(supplierConfig, records.ToList());
+                var records = csv.GetRecordsAsync<PSQLRoute>();
+                await _gtfsContext.UpsertRoutesAsync(supplierConfig, records, token);
             }
         }
         stopwatch.Restart();
@@ -127,8 +135,8 @@ public class GenericGTFSSupplier
             using (var csv = new CsvReader(reader, config))
             {
                 csv.Context.RegisterClassMap<TripMap>();
-                var records = csv.GetRecords<PSQLTrip>();
-                await _gtfsContext.UpsertTripsAsync(supplierConfig, records.ToList());
+                var records = csv.GetRecordsAsync<PSQLTrip>();
+                await _gtfsContext.UpsertTripsAsync(supplierConfig, records, token);
             }
         }
 
@@ -143,9 +151,13 @@ public class GenericGTFSSupplier
             using (var csv = new CsvReader(reader, config))
             {
                 csv.Context.RegisterClassMap<StopMap>();
-                var records = csv.GetRecords<PSQLStop>();
-                var stops = records.ToList();
-                await _gtfsContext.UpsertStopsAsync(supplierConfig, stops);
+                var stops = new List<PSQLStop>();
+                await foreach (var stop in csv.GetRecordsAsync<PSQLStop>().WithCancellation(token))
+                {
+                    stops.Add(stop);
+                }
+
+                await _gtfsContext.UpsertStopsAsync(supplierConfig, ToAsyncEnumerable(stops, token), token);
                 await NotifyAsync(supplierConfig, stops);
             }
         }
@@ -160,8 +172,8 @@ public class GenericGTFSSupplier
                 using (var csv = new CsvReader(reader, config))
                 {
                     csv.Context.RegisterClassMap<ShapeMap>();
-                    var records = csv.GetRecords<PSQLShape>();
-                    await _gtfsContext.UpsertShapesAsync(supplierConfig, records.ToList());
+                    var records = csv.GetRecordsAsync<PSQLShape>();
+                    await _gtfsContext.UpsertShapesAsync(supplierConfig, records, token);
                 }
             }
         }
@@ -176,8 +188,8 @@ public class GenericGTFSSupplier
                 using (var csv = new CsvReader(reader, config))
                 {
                     csv.Context.RegisterClassMap<CalendarMap>();
-                    var records = csv.GetRecords<PSQLCalendar>();
-                    await _gtfsContext.UpsertCalendarsAsync(supplierConfig, records);
+                    var records = csv.GetRecordsAsync<PSQLCalendar>();
+                    await _gtfsContext.UpsertCalendarsAsync(supplierConfig, records, token);
                 }
             }
         }
@@ -238,7 +250,7 @@ public class GenericGTFSSupplier
         _logger.LogInformation("Created/Cleared working directories");
     }
 
-    private async Task DownloadFeed(ImportRequest supplier)
+    private async Task DownloadFeed(ImportRequest supplier, CancellationToken cancellationToken)
     {
         if (supplier.RetrievalType == RetrievalType.REST)
         {
@@ -254,14 +266,14 @@ public class GenericGTFSSupplier
 
             _logger.LogInformation("Request generated towards {url}", supplier.Url);
 
-            var response = await _httpClient.SendAsync(request);
+            var response = await _httpClient.SendAsync(request, cancellationToken);
 
             if (response.IsSuccessStatusCode)
             {
-                var data = await response.Content.ReadAsByteArrayAsync();
+                var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
                 if (data != null)
                 {
-                    await File.WriteAllBytesAsync(_rawPath + @"/gtfs_file.zip", data);
+                    await File.WriteAllBytesAsync(_rawPath + @"/gtfs_file.zip", data, cancellationToken);
                     await _dataContext.UpdateImportStatusAsync(supplier, "Feed download complete");
                 }
                 else
@@ -289,6 +301,7 @@ public class GenericGTFSSupplier
             throw new NotImplementedException("Unsupported retrievaltype");
         }
     }
+    
     private async Task SendMessageAsync(string body, ImportRequest supplier)
     {
         _logger.LogInformation(body);
@@ -298,5 +311,16 @@ public class GenericGTFSSupplier
         );
         await _discordWebHookClient.SendToDiscordAsync(message);
 
+    }
+
+    private static async IAsyncEnumerable<T> ToAsyncEnumerable<T>(IEnumerable<T> items, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        foreach (var item in items)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            yield return item;
+        }
+
+        await Task.CompletedTask;
     }
 }
