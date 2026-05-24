@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.5.2] - 25-05-2026
+### Changed
+- Passive declare queues / exchanges
+
 ## [2.5.1] - 22-03-2026
 ### Fixed
 - Filter duplicate stop rows inside each upsert batch by `data_origin + id` before calling `public.upsert_stops`, preventing `uq_stops_data_origin_id` violations caused by duplicate records in a single chunk.

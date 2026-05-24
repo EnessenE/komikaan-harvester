@@ -30,12 +30,8 @@ namespace komikaan.Harvester.Contexts
             _channel = connection.CreateModel();
 
 
-            _channel.ExchangeDeclare("stop-notifications", "direct", true);
-            _channel.QueueDeclare(queue: "gardeners", 
-                                 durable: true,
-                                 exclusive: false,
-                                 autoDelete: false,
-                                 arguments: null);
+            _channel.ExchangeDeclarePassive("stop-notifications");
+            _channel.QueueDeclarePassive(queue: "gardeners");
             _channel.QueueBind("gardeners", "stop-notifications", "gardener");
             _logger.LogInformation("Connected to gardener queue");
 
