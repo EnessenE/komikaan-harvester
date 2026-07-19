@@ -63,9 +63,10 @@ namespace komikaan.Harvester.Managers
                 await SendMessageAsync(config, "Starting import, getting feed info");
                 await _genericGTFSSupplier.RetrieveFeed(config, cancellationToken);
                 _logger.LogInformation("Finished importing data in {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
-                await SendMessageAsync(config, "Starting to delete old data");
+                await SendMessageAsync(config, "Starting building new data...");
+                await _dataContext.BuildGTFSDatesAsync(config);
+                await SendMessageAsync(config, $"Finished building at {stopwatch.Elapsed:g}. Starting to delete old data");
                 await _dataContext.DeleteOldDataAsync(config);
-                _logger.LogInformation("Old data cleanup");
                 await SendMessageAsync(config, "Cleaning old stops");
                 await _dataContext.CleanOldStopDataAsync(config);
                 await _dataContext.MarkSuccessImportAsync(config);

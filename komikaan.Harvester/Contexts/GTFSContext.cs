@@ -89,7 +89,7 @@ public class GTFSContext
 
                 using (var connection = _dataSource.CreateConnection())
                 {
-                    var query = $"CREATE TABLE IF NOT EXISTS public.{partitionName} PARTITION OF public.stop_times\n";
+                    var query = $"CREATE TABLE IF NOT EXISTS public.\"{partitionName}\" PARTITION OF public.stop_times\n";
                     query += $"FOR VALUES FROM ('{supplierConfig.Name}', '{supplierConfig.ImportId}')\n";
                     query += $"TO ('{supplierConfig.Name}', '{supplierConfig.ImportId.Increment()}')\n";
 
@@ -140,9 +140,9 @@ public class GTFSContext
             AND tablename NOT LIKE '{partitionName}'
         LOOP
             -- Dynamically drop each partition
-            EXECUTE 'DROP TABLE IF EXISTS public.' || partition.tablename;
+            EXECUTE 'DROP TABLE IF EXISTS public.' || quote_ident(partition.tablename);
         END LOOP;
-    END $$;".ToLowerInvariant();
+    END $$;".ToLower();
 
                 _logger.LogInformation("Generated query: {query}", query);
                 var command = new NpgsqlCommand(query, connection);

@@ -90,22 +90,36 @@ internal class PostgresContext : IDataContext
          );
     }
 
-
-    public async Task DeleteOldDataAsync(ImportRequest config)
+    public async Task BuildGTFSDatesAsync(ImportRequest config)
     {
         _logger.LogWarning("Moving to last import");
         using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
         await dbConnection.ExecuteAsync(
-          @"CALL public.move_to_new_import(@id, @dataorigin)",
+          @"CALL public.harvester_rebuild_gtfs_service_dates(@id, @dataorigin)",
              new
              {
-                 id = config.ImportId,
+                 id = config.QueuedImportId,
                  dataorigin = config.Name,
              },
               commandType: CommandType.Text
           );
     }
 
+    public async Task DeleteOldDataAsync(ImportRequest config)
+    {
+        _logger.LogWarning("Moving to last import");
+        using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
+        await dbConnection.ExecuteAsync(
+            @"CALL public.move_to_new_import(@id, @dataorigin)",
+            new
+            {
+                id = config.QueuedImportId,
+                dataorigin = config.Name,
+            },
+            commandType: CommandType.Text
+        );
+    }
+    
     public async Task<List<SupplierTypeMapping>?> GetTypeMappingsAsync(ImportRequest config)
     {
         using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);

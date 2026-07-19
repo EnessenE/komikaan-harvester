@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.6.0] - 19-07-2026
+### Added
+- Support for harvester_rebuild_gtfs_service_dates to build normalized service dates
+### Changed
+- Attempt to fix wrong import id being passed to DB causing cleanup to fail
+- Attempt to fix an issue around partitions starting with numbers in their names, causing "42601: trailing junk after numeric literal at or near 'bla''"
+
 ## [2.5.2] - 25-05-2026
 ### Changed
 - Passive declare queues / exchanges
