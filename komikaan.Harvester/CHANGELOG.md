@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.6.2] - 25-07-2026
+### Added
+- Ignore BadData and BlankLines for supplier with different opinions about CSVs
+
 ## [2.6.1] - 25-07-2026
 ### Changed
 - Attempt to properly pass import_id to the DB by passing queued_import_id consistently
