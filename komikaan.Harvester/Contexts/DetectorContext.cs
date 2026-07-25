@@ -6,6 +6,7 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
 using System.Text.Json;
+using komikaan.Harvester.Models;
 
 namespace komikaan.Harvester.Contexts
 {
@@ -44,8 +45,7 @@ namespace komikaan.Harvester.Contexts
                     Name = "gob.es-metroval",
                     Url = "C:\\Users\\Enes\\Downloads\\20250927_220027_Metro_Valencia.zip",
                     ETag = null,
-                    ImportId = Guid.NewGuid(),
-                    LatestSuccesfullImportId = Guid.NewGuid(),
+                    QueuedImportId = Guid.NewGuid(),
                     LastAttempt = null,
                     LastChecked = DateTimeOffset.UtcNow,
                     DownloadPending = false
@@ -93,7 +93,7 @@ namespace komikaan.Harvester.Contexts
                     var message = Encoding.UTF8.GetString(body);
                     var item = JsonSerializer.Deserialize<ImportRequest>(message);
 
-                    using (_logger.BeginScope("{name} - {import}", item.Name, item.ImportId))
+                    using (_logger.BeginScope("{name} - {import}", item.Name, item.QueuedImportId))
                     {
                         if (DateTimeOffset.UtcNow - item.ImportRequestedAt > item.DelayImportBy)
                         {

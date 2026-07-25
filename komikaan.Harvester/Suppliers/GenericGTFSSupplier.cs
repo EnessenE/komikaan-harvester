@@ -13,6 +13,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;
 using System.Runtime.CompilerServices;
+using komikaan.Harvester.Models;
+
 namespace komikaan.Harvester.Suppliers;
 
 

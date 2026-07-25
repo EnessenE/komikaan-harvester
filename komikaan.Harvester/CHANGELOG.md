@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.6.1] - 25-07-2026
+### Changed
+- Attempt to properly pass import_id to the DB by passing queued_import_id consistently
+- Remove legacy clean_old_data call
+
 ## [2.6.0] - 19-07-2026
 ### Added
 - Support for harvester_rebuild_gtfs_service_dates to build normalized service dates

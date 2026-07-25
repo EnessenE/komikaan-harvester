@@ -3,6 +3,7 @@ using komikaan.Common.Models;
 using komikaan.Harvester.Interfaces;
 using komikaan.Harvester.Suppliers;
 using System.Data;
+using komikaan.Harvester.Models;
 
 namespace komikaan.Harvester.Contexts;
 
@@ -60,7 +61,6 @@ internal class PostgresContext : IDataContext
         {
             data_origin = config.Name,
             state = importStatus,
-
         },
              commandType: CommandType.Text
          );
@@ -80,19 +80,9 @@ internal class PostgresContext : IDataContext
          );
     }
 
-    public async Task CleanOldStopDataAsync(ImportRequest config)
-    {
-        using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
-
-        await dbConnection.ExecuteAsync(
-         @"CALL public.clean_old_data()",
-             commandType: CommandType.Text
-         );
-    }
-
     public async Task BuildGTFSDatesAsync(ImportRequest config)
     {
-        _logger.LogWarning("Moving to last import");
+        _logger.LogWarning("Started building GTFS dates");
         using var dbConnection = new Npgsql.NpgsqlConnection(_connectionString);
         await dbConnection.ExecuteAsync(
           @"CALL public.harvester_rebuild_gtfs_service_dates(@id, @dataorigin)",

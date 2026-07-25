@@ -1,4 +1,6 @@
-﻿namespace komikaan.Common.Models;
+﻿using komikaan.Common.Models;
+
+namespace komikaan.Harvester.Models;
 
 public class ImportRequest
 {
@@ -10,8 +12,6 @@ public class ImportRequest
     public required string Name { get; set; }
     public required string Url { get; set; }
     public required string? ETag { get; set; }
-    public required Guid ImportId { get; set; }
-    public required Guid LatestSuccesfullImportId { get; set; }
 
     public DateTimeOffset LastUpdated { get; set; }
     public DateTimeOffset? LastAttempt { get; set; }

@@ -5,6 +5,7 @@ using komikaan.Harvester.Adapters;
 using Npgsql;
 using System.Collections.Generic;
 using System.Diagnostics;
+using komikaan.Harvester.Models;
 
 namespace komikaan.Harvester.Contexts;
 
@@ -38,7 +39,7 @@ public class GTFSContext
 
     private async Task UpsertEntityAsync<T>(ImportRequest supplierConfig, string procedureName, string tvpTypeName, IAsyncEnumerable<T> entities, int batchSize, bool partioned, CancellationToken cancellationToken) where T : GTFSStaticObject
     {
-        var partitionName = $"{supplierConfig.Name.ToString().Replace("-", "_").Replace(" ", "_").Replace(".", "_")}_{supplierConfig.ImportId.ToString().Replace("-", "_")}";
+        var partitionName = $"{supplierConfig.Name.ToString().Replace("-", "_").Replace(" ", "_").Replace(".", "_")}_{supplierConfig.QueuedImportId.ToString().Replace("-", "_")}";
         partitionName = partitionName.Length <= 62 ? partitionName : partitionName.Substring(0, 62);
 
         var stopwatch = Stopwatch.StartNew();
@@ -90,8 +91,8 @@ public class GTFSContext
                 using (var connection = _dataSource.CreateConnection())
                 {
                     var query = $"CREATE TABLE IF NOT EXISTS public.\"{partitionName}\" PARTITION OF public.stop_times\n";
-                    query += $"FOR VALUES FROM ('{supplierConfig.Name}', '{supplierConfig.ImportId}')\n";
-                    query += $"TO ('{supplierConfig.Name}', '{supplierConfig.ImportId.Increment()}')\n";
+                    query += $"FOR VALUES FROM ('{supplierConfig.Name}', '{supplierConfig.QueuedImportId}')\n";
+                    query += $"TO ('{supplierConfig.Name}', '{supplierConfig.QueuedImportId.Increment()}')\n";
 
                     _logger.LogInformation("Generated query: {query}", query);
                     var command = new NpgsqlCommand(query, connection);

@@ -54,7 +54,7 @@ namespace komikaan.Harvester.Managers
         {
             Directory.CreateDirectory(@"/app/");
             StaticImportData.CurrentDataOrigin = config.Name;
-            StaticImportData.CurrentImportId = config.ImportId;
+            StaticImportData.CurrentImportId = config.QueuedImportId;
 
             try
             {
@@ -63,12 +63,11 @@ namespace komikaan.Harvester.Managers
                 await SendMessageAsync(config, "Starting import, getting feed info");
                 await _genericGTFSSupplier.RetrieveFeed(config, cancellationToken);
                 _logger.LogInformation("Finished importing data in {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
-                await SendMessageAsync(config, "Starting building new data...");
+                await SendMessageAsync(config, $"Starting building new data at {stopwatch.Elapsed:g}...");
                 await _dataContext.BuildGTFSDatesAsync(config);
                 await SendMessageAsync(config, $"Finished building at {stopwatch.Elapsed:g}. Starting to delete old data");
                 await _dataContext.DeleteOldDataAsync(config);
-                await SendMessageAsync(config, "Cleaning old stops");
-                await _dataContext.CleanOldStopDataAsync(config);
+                await SendMessageAsync(config, "Finished cleaning up old data, marking as complete.");
                 await _dataContext.MarkSuccessImportAsync(config);
                 _logger.LogInformation("Finished import in {time}", stopwatch.Elapsed.ToString("g"));
                 await SendMessageAsync(config, "Finished import in " + stopwatch.Elapsed.ToString("g"));
