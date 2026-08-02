@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.6.3] - 02-08-2026
+### Changed
+- Properly use the sanatized data origin name to delete paritions
+
 ## [2.6.2] - 25-07-2026
 ### Added
 - Ignore BadData and BlankLines for supplier with different opinions about CSVs

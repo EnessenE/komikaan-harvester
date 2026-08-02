@@ -39,7 +39,8 @@ public class GTFSContext
 
     private async Task UpsertEntityAsync<T>(ImportRequest supplierConfig, string procedureName, string tvpTypeName, IAsyncEnumerable<T> entities, int batchSize, bool partioned, CancellationToken cancellationToken) where T : GTFSStaticObject
     {
-        var partitionName = $"{supplierConfig.Name.ToString().Replace("-", "_").Replace(" ", "_").Replace(".", "_")}_{supplierConfig.QueuedImportId.ToString().Replace("-", "_")}";
+        var sanatizedSupplierName = supplierConfig.Name.ToString().Replace("-", "_").Replace(" ", "_").Replace(".", "_");
+        var partitionName = $"{sanatizedSupplierName}_{supplierConfig.QueuedImportId.ToString().Replace("-", "_")}";
         partitionName = partitionName.Length <= 62 ? partitionName : partitionName.Substring(0, 62);
 
         var stopwatch = Stopwatch.StartNew();
@@ -136,9 +137,9 @@ public class GTFSContext
             SELECT tablename
             FROM pg_tables
             WHERE schemaname = 'public'
-    		AND tablename LIKE '{supplierConfig.Name.ToString().Replace("-", "_").Replace(" ", "_").Replace(".", "_")}_%'
-    		AND tablename NOT LIKE 'stop_times_default'
-            AND tablename NOT LIKE '{partitionName}'
+    		AND lower(tablename) LIKE '{sanatizedSupplierName}_%'
+    		AND lower(tablename) NOT LIKE 'stop_times_default'
+            AND lower(tablename) NOT LIKE '{partitionName}'
         LOOP
             -- Dynamically drop each partition
             EXECUTE 'DROP TABLE IF EXISTS public.' || quote_ident(partition.tablename);
