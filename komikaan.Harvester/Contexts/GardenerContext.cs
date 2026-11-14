@@ -32,7 +32,6 @@ namespace komikaan.Harvester.Contexts
 
             await _channel.ExchangeDeclarePassiveAsync("stop-notifications");
             await _channel.QueueDeclarePassiveAsync(queue: "gardeners");
-            await _channel.QueueBindAsync("gardeners", "stop-notifications", "gardener");
             _logger.LogInformation("Connected to gardener queue");
 
         }

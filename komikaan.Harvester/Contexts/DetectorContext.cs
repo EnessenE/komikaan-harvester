@@ -71,15 +71,8 @@ namespace komikaan.Harvester.Contexts
             await _channel.BasicQosAsync(0, 1, false);
             _channel.ContinuationTimeout = TimeSpan.FromHours(3);
 
-            await _channel.ExchangeDeclareAsync("harvester-notifications", ExchangeType.Direct, durable: true);
-            var args = new Dictionary<string, object?>();
-            args.Add("x-queue-type", "quorum");
-            await _channel.QueueDeclareAsync(queue: "harvesters",
-                                 durable: true,
-                                 exclusive: false,
-                                 autoDelete: false,
-                                 arguments: args);
-            await _channel.QueueBindAsync("harvesters", "harvester-notifications", "harvester");
+            await _channel.ExchangeDeclarePassiveAsync("harvester-notifications");
+            await _channel.QueueDeclarePassiveAsync(queue: "harvesters");
 
             var consumer = new AsyncEventingBasicConsumer(_channel);
             var importRunning = false;
