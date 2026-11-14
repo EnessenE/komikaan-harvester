@@ -25,11 +25,6 @@ namespace komikaan.Harvester.Adapters
         public int? AccessibilityTypeData { get => (int?)WheelchairAccessible; set => WheelchairAccessible = (WheelchairAccessible?)value; }
 
         /// <summary>
-        /// Optional: If you want to store bikes_allowed as int
-        /// </summary>
-        public int? BikesAllowedData { get => (int?)BikesAllowed; set => BikesAllowed = (BikesAllowed?)value; }
-
-        /// <summary>
         /// Maps to trips_type.data_origin
         /// </summary>
         public string DataOrigin { get; set; } = StaticImportData.CurrentDataOrigin;

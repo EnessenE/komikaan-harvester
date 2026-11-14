@@ -1,7 +1,6 @@
 ﻿using komikaan.GTFS.Models.Static.Enums;
 using komikaan.GTFS.Models.Static.Models;
 using komikaan.Harvester.Models;
-using Newtonsoft.Json.Linq;
 
 namespace komikaan.Harvester.Adapters
 {
@@ -15,54 +14,41 @@ namespace komikaan.Harvester.Adapters
         public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
         public Guid ImportId { get; set; } = StaticImportData.CurrentImportId;
 
-        public new TimeSpan? ArrivalTimeData
+        /// <summary>
+        /// Maps to stop_times_type.arrival_time_data (time of day). GTFS times can exceed 24:00:00,
+        /// the whole days are split off into <see cref="DaysSinceStartArrival"/> so the remainder fits in a PG time.
+        /// </summary>
+        public TimeSpan? ArrivalTimeData
         {
             get
             {
                 var tempValue = base.ArrivalTime;
-                if (base.ArrivalTime != null && base.ArrivalTime?.Days > 0)
+                if (tempValue != null && tempValue.Value.Days > 0)
                 {
-                    DaysSinceStartArrival = base.ArrivalTime.Value.Days;
-                    tempValue= tempValue?.Subtract(TimeSpan.FromDays(DaysSinceStartArrival));
+                    DaysSinceStartArrival = tempValue.Value.Days;
+                    tempValue = tempValue.Value.Subtract(TimeSpan.FromDays(DaysSinceStartArrival));
                 }
                 return tempValue;
             }
-
-            set
-            {
-                var tempValue = value;
-                if (base.ArrivalTime != null && base.ArrivalTime?.Days > 0)
-                {
-                    DaysSinceStartArrival = base.ArrivalTime.Value.Days;
-                    tempValue= tempValue?.Subtract(TimeSpan.FromDays(DaysSinceStartArrival));
-                }
-                base.ArrivalTime = tempValue;
-            }
+            set => base.ArrivalTime = value;
         }
 
-        public new TimeSpan? DepartureTimeData
+        /// <summary>
+        /// Maps to stop_times_type.departure_time_data (time of day), see <see cref="ArrivalTimeData"/>.
+        /// </summary>
+        public TimeSpan? DepartureTimeData
         {
             get
             {
                 var tempValue = base.DepartureTime;
-                if (base.ArrivalTime != null && base.DepartureTime?.Days > 0)
+                if (tempValue != null && tempValue.Value.Days > 0)
                 {
-                    DaysSinceStartDeparture = base.DepartureTime.Value.Days;
-                    tempValue = tempValue?.Subtract(TimeSpan.FromDays(DaysSinceStartDeparture));
+                    DaysSinceStartDeparture = tempValue.Value.Days;
+                    tempValue = tempValue.Value.Subtract(TimeSpan.FromDays(DaysSinceStartDeparture));
                 }
                 return tempValue;
             }
-
-            set
-            {
-                var tempValue = value;
-                if (base.DepartureTime != null && base.DepartureTime?.Days > 0)
-                {
-                    DaysSinceStartDeparture = base.DepartureTime.Value.Days;
-                    tempValue = tempValue?.Subtract(TimeSpan.FromDays(DaysSinceStartDeparture));
-                }
-                base.DepartureTime = tempValue;
-            }
+            set => base.DepartureTime = value;
         }
 
         public double StopSequenceData

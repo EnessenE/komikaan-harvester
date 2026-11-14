@@ -1,6 +1,4 @@
-﻿using komikaan.GTFS.Models.Static.Enums;
-using komikaan.GTFS.Models.Static.Enums;
-using komikaan.Harvester.Models;
+﻿using komikaan.Harvester.Models;
 
 namespace komikaan.GTFS.Models.Static.Models
 {
