@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.7.0] - 14-11-2026
+### Changed
+- Bump all NuGet dependencies to their latest versions (RabbitMQ.Client 7.x required migrating to the async channel API; CsvHelper pinned to 33.1.0 because 34.x is a breaking rewrite)
+- RabbitMQ topology is now declared via the RabbitMQ operator; the app only passive-declares the exchange and queue
+- Remove unused NetTopologySuite.Core dependency
+
 ## [2.6.3] - 02-08-2026
 ### Changed
 - Properly use the sanatized data origin name to delete paritions

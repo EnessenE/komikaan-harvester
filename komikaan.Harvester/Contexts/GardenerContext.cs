@@ -7,7 +7,7 @@ namespace komikaan.Harvester.Contexts
 {
     public class GardenerContext : IGardenerContext
     {
-        private IModel _channel;
+        private IChannel _channel = null!;
         private readonly ILogger<GardenerContext> _logger;
         private readonly IConfiguration _configuration;
 
@@ -17,7 +17,7 @@ namespace komikaan.Harvester.Contexts
             _configuration = configuration;
         }
 
-        public Task StartAsync(CancellationToken token)
+        public async Task StartAsync(CancellationToken token)
         {
 
             _logger.LogInformation("Connecting to gardener queue");
@@ -26,16 +26,14 @@ namespace komikaan.Harvester.Contexts
             factory.HostName = _configuration.GetValue<string>("RabbitMQHost")!;
             factory.UserName = _configuration.GetValue<string>("RabbitMQUsername")!;
             factory.Password = _configuration.GetValue<string>("RabbitMQPassword")!;
-            var connection = factory.CreateConnection();
-            _channel = connection.CreateModel();
+            var connection = await factory.CreateConnectionAsync();
+            _channel = await connection.CreateChannelAsync();
 
 
-            _channel.ExchangeDeclarePassive("stop-notifications");
-            _channel.QueueDeclarePassive(queue: "gardeners");
-            _channel.QueueBind("gardeners", "stop-notifications", "gardener");
+            await _channel.ExchangeDeclarePassiveAsync("stop-notifications");
+            await _channel.QueueDeclarePassiveAsync(queue: "gardeners");
             _logger.LogInformation("Connected to gardener queue");
 
-            return Task.CompletedTask;
         }
 
         public void SendMessage(object message)
@@ -47,10 +45,11 @@ namespace komikaan.Harvester.Contexts
 
             var rawMessage = JsonSerializer.Serialize(message, options);
             var body = Encoding.UTF8.GetBytes(rawMessage);
-            _channel.BasicPublish(exchange: string.Empty,
+            _channel.BasicPublishAsync(exchange: string.Empty,
                                  routingKey: "gardeners",
-                                 basicProperties: null,
-                                 body: body);
+                                 mandatory: false,
+                                 basicProperties: new BasicProperties(),
+                                 body: body).GetAwaiter().GetResult();
         }
     }
 }

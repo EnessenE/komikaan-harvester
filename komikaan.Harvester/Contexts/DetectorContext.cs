@@ -15,7 +15,7 @@ namespace komikaan.Harvester.Contexts
         private readonly ILogger<DetectorContext> _logger;
         private readonly HarvestingManager _harvestingManager;
         private readonly DiscordWebhookClient _discordWebHookClient;
-        private IModel _channel;
+        private IChannel _channel = null!;
         private IDataContext _dataContext;
         private readonly IConfiguration _configuration;
         private CancellationToken _stoppingToken;
@@ -53,11 +53,11 @@ namespace komikaan.Harvester.Contexts
             }
             else
             {
-                StartDetector();
+                await StartDetector();
             }
         }
 
-        private void StartDetector()
+        private async Task StartDetector()
         {
             _logger.LogInformation("Connecting to detector queue");
             var factory = new ConnectionFactory();
@@ -66,24 +66,17 @@ namespace komikaan.Harvester.Contexts
             factory.UserName = _configuration.GetValue<string>("RabbitMQUsername")!;
             factory.Password = _configuration.GetValue<string>("RabbitMQPassword")!;
             factory.RequestedConnectionTimeout = TimeSpan.FromHours(3);
-            var connection = factory.CreateConnection();
-            _channel = connection.CreateModel();
-            _channel.BasicQos(0, 1, false);
+            var connection = await factory.CreateConnectionAsync();
+            _channel = await connection.CreateChannelAsync();
+            await _channel.BasicQosAsync(0, 1, false);
             _channel.ContinuationTimeout = TimeSpan.FromHours(3);
 
-            _channel.ExchangeDeclare("harvester-notifications", ExchangeType.Direct, durable: true);
-            var args = new Dictionary<string, object>();
-            args.Add("x-queue-type", "quorum");
-            _channel.QueueDeclare(queue: "harvesters",
-                                 durable: true,
-                                 exclusive: false,
-                                 autoDelete: false,
-                                 arguments: args);
-            _channel.QueueBind("harvesters", "harvester-notifications", "harvester");
+            await _channel.ExchangeDeclarePassiveAsync("harvester-notifications");
+            await _channel.QueueDeclarePassiveAsync(queue: "harvesters");
 
-            var consumer = new EventingBasicConsumer(_channel);
+            var consumer = new AsyncEventingBasicConsumer(_channel);
             var importRunning = false;
-            consumer.Received += async (model, ea) =>
+            consumer.ReceivedAsync += async (model, ea) =>
             {
                 if (!importRunning)
                 {
@@ -104,7 +97,7 @@ namespace komikaan.Harvester.Contexts
                         {
                             _logger.LogInformation($"{item.Name} - {item.QueuedImportId} is being artifically delayed as it was requested at {item.ImportRequestedAt:R} but delayed by {item.DelayImportBy}");
                             await Task.Delay(TimeSpan.FromMinutes(1), _stoppingToken);
-                            _channel.BasicNack(ea.DeliveryTag, false, true);
+                            await _channel.BasicNackAsync(ea.DeliveryTag, false, true);
                             importRunning = false;
                         }
                     }
@@ -116,10 +109,10 @@ namespace komikaan.Harvester.Contexts
                     //quick look over there!
                     _logger.LogInformation("Got an early message, waiting and NACKing and requeuing it");
                     await Task.Delay(TimeSpan.FromMinutes(1), _stoppingToken);
-                    _channel.BasicNack(ea.DeliveryTag, false, true);
+                    await _channel.BasicNackAsync(ea.DeliveryTag, false, true);
                 }
             };
-            _channel.BasicConsume(queue: "harvesters",
+            await _channel.BasicConsumeAsync(queue: "harvesters",
                                  autoAck: false,
                                  consumer: consumer, consumerTag: "harvester");
             _logger.LogInformation("Started, waiting for a new import");
@@ -130,7 +123,7 @@ namespace komikaan.Harvester.Contexts
             try
             {
                 _logger.LogInformation("Import accepted");
-                _channel.BasicAck(ea.DeliveryTag, false);
+                await _channel.BasicAckAsync(ea.DeliveryTag, false);
                 await ProcessMessageAsync(item, cancellationToken);
             }
             catch (Exception ex)
