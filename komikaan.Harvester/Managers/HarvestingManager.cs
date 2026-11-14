@@ -41,18 +41,23 @@ namespace komikaan.Harvester.Managers
 
         private async Task SendMessageAsync(ImportRequest config, string body)
         {
-            var message = new DiscordMessage("**Import progress for " + config.Name + "**\n" + body,
-                username: Environment.MachineName,
-                tts: false
-            );
-            await _discordWebHookClient.SendToDiscordAsync(message);
-
+            try
+            {
+                var message = new DiscordMessage("**Import progress for " + config.Name + "**\n" + body,
+                    username: Environment.MachineName,
+                    tts: false
+                );
+                await _discordWebHookClient.SendToDiscordAsync(message);
+            }
+            catch (Exception ex)
+            {
+                // A broken webhook must never fail an import or skip the DB bookkeeping
+                _logger.LogWarning(ex, "Failed to send Discord notification for {supplier}", config.Name);
+            }
         }
 
-        // A bit of a mess atm due to a GTFS dependency removal, will clean this up when its not summer
         public async Task Harvest(ImportRequest config, CancellationToken cancellationToken = default)
         {
-            Directory.CreateDirectory(@"/app/");
             StaticImportData.CurrentDataOrigin = config.Name;
             StaticImportData.CurrentImportId = config.QueuedImportId;
 
@@ -74,16 +79,23 @@ namespace komikaan.Harvester.Managers
             }
             catch (Exception error)
             {
-                await SendMessageAsync(config, "Import failed! <@124928188647211009> \n " + error.Message);
                 _logger.LogCritical("Failed import for {supplier}", config.Name);
                 _logger.LogError(error, "Following error:");
-                await _dataContext.MarkDownloadFailure(config);
-                _logger.LogInformation("Marked as failed!");
-                await _dataContext.UpdateImportStatusAsync(config, "import failed");
+                try
+                {
+                    await _dataContext.MarkDownloadFailure(config);
+                    await _dataContext.UpdateImportStatusAsync(config, "import failed");
+                    _logger.LogInformation("Marked as failed!");
+                }
+                catch (Exception markError)
+                {
+                    _logger.LogError(markError, "Failed to mark the import as failed for {supplier}", config.Name);
+                }
+                await SendMessageAsync(config, "Import failed! <@124928188647211009> \n " + error.Message);
             }
             finally
             {
-                File.Delete("\\app\\gtfs_file.zip");
+                // The working directories are cleared at the start of the next import
                 GC.Collect();
             }
 

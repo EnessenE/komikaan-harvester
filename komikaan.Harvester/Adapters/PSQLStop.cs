@@ -88,9 +88,14 @@ namespace komikaan.Harvester.Adapters
         public string? PlatformCodeData { get => PlatformCode; set => PlatformCode = value; }
 
         /// <summary>
-        /// Maps to stops_type.stop_type_data
+        /// Maps to stops_type.stop_type_data. GTFS location_type defaults to 0 (stop/platform) when absent.
+        /// The gardener later overwrites stop_type with the type of the routes serving the stop.
         /// </summary>
-        public int StopTypeData { get=> (int)StopType ; set=>StopType = (RouteType)value; }
+        public int StopTypeData
+        {
+            get => (int)(LocationType ?? komikaan.GTFS.Models.Static.Enums.LocationType.Stop);
+            set => LocationType = (komikaan.GTFS.Models.Static.Enums.LocationType)value;
+        }
 
         /// <summary>
         /// Maps to stops_type.data_origin
@@ -106,8 +111,5 @@ namespace komikaan.Harvester.Adapters
         /// Maps to stops_type.import_id
         /// </summary>
         public Guid ImportId { get; set; } = StaticImportData.CurrentImportId;
-
-
-        public RouteType StopType { get; set; } = RouteType.Funicular;
     }
 }

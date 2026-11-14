@@ -1,9 +1,9 @@
 ﻿using CsvHelper.Configuration;
-using komikaan.GTFS.Models.Static.Models;
+using komikaan.Harvester.Adapters;
 
 namespace komikaan.Harvester.Suppliers;
 
-public class StopTimeMap : ClassMap<StopTime>
+public class StopTimeMap : ClassMap<PSQLStopTime>
 {
     public StopTimeMap()
     {

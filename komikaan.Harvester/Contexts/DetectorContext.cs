@@ -16,7 +16,8 @@ namespace komikaan.Harvester.Contexts
         private readonly HarvestingManager _harvestingManager;
         private readonly DiscordWebhookClient _discordWebHookClient;
         private IChannel _channel = null!;
-        private IDataContext _dataContext;
+        private IConnection? _connection;
+        private readonly IDataContext _dataContext;
         private readonly IConfiguration _configuration;
         private CancellationToken _stoppingToken;
 
@@ -67,6 +68,7 @@ namespace komikaan.Harvester.Contexts
             factory.Password = _configuration.GetValue<string>("RabbitMQPassword")!;
             factory.RequestedConnectionTimeout = TimeSpan.FromHours(3);
             var connection = await factory.CreateConnectionAsync();
+            _connection = connection;
             _channel = await connection.CreateChannelAsync();
             await _channel.BasicQosAsync(0, 1, false);
             _channel.ContinuationTimeout = TimeSpan.FromHours(3);
@@ -78,31 +80,7 @@ namespace komikaan.Harvester.Contexts
             var importRunning = false;
             consumer.ReceivedAsync += async (model, ea) =>
             {
-                if (!importRunning)
-                {
-                    importRunning = true;
-                    _logger.LogInformation("Received a message!");
-                    var body = ea.Body.ToArray();
-                    var message = Encoding.UTF8.GetString(body);
-                    var item = JsonSerializer.Deserialize<ImportRequest>(message);
-
-                    using (_logger.BeginScope("{name} - {import}", item.Name, item.QueuedImportId))
-                    {
-                        if (DateTimeOffset.UtcNow - item.ImportRequestedAt > item.DelayImportBy)
-                        {
-                            await StartImport(ea, item, _stoppingToken);
-                            importRunning = false;
-                        }
-                        else
-                        {
-                            _logger.LogInformation($"{item.Name} - {item.QueuedImportId} is being artifically delayed as it was requested at {item.ImportRequestedAt:R} but delayed by {item.DelayImportBy}");
-                            await Task.Delay(TimeSpan.FromMinutes(1), _stoppingToken);
-                            await _channel.BasicNackAsync(ea.DeliveryTag, false, true);
-                            importRunning = false;
-                        }
-                    }
-                }
-                else
+                if (importRunning)
                 {
                     //This is a hack because I want to use RabbitMQ and that doesn't like long running tasks
                     //note: Why don't you just close the consumer?
@@ -110,6 +88,65 @@ namespace komikaan.Harvester.Contexts
                     _logger.LogInformation("Got an early message, waiting and NACKing and requeuing it");
                     await Task.Delay(TimeSpan.FromMinutes(1), _stoppingToken);
                     await _channel.BasicNackAsync(ea.DeliveryTag, false, true);
+                    return;
+                }
+
+                importRunning = true;
+                try
+                {
+                    _logger.LogInformation("Received a message!");
+                    var body = ea.Body.ToArray();
+                    var message = Encoding.UTF8.GetString(body);
+                    ImportRequest? item;
+                    try
+                    {
+                        item = JsonSerializer.Deserialize<ImportRequest>(message);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Poison message: ack (drop) it so it doesn't redeliver forever
+                        _logger.LogError(ex, "Could not parse import request, dropping message");
+                        await _channel.BasicAckAsync(ea.DeliveryTag, false);
+                        return;
+                    }
+
+                    if (item == null)
+                    {
+                        _logger.LogError("Received an empty import request, dropping message");
+                        await _channel.BasicAckAsync(ea.DeliveryTag, false);
+                        return;
+                    }
+
+                    using (_logger.BeginScope("{name} - {import}", item.Name, item.QueuedImportId))
+                    {
+                        if (DateTimeOffset.UtcNow - item.ImportRequestedAt > item.DelayImportBy)
+                        {
+                            await StartImport(ea, item, _stoppingToken);
+                        }
+                        else
+                        {
+                            _logger.LogInformation($"{item.Name} - {item.QueuedImportId} is being artifically delayed as it was requested at {item.ImportRequestedAt:R} but delayed by {item.DelayImportBy}");
+                            await Task.Delay(TimeSpan.FromMinutes(1), _stoppingToken);
+                            await _channel.BasicNackAsync(ea.DeliveryTag, false, true);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Never leave importRunning stuck: requeue the message so it is retried later
+                    _logger.LogError(ex, "Unexpected error while handling an import request, requeueing it");
+                    try
+                    {
+                        await _channel.BasicNackAsync(ea.DeliveryTag, false, true);
+                    }
+                    catch (Exception nackError)
+                    {
+                        _logger.LogError(nackError, "Failed to requeue the message");
+                    }
+                }
+                finally
+                {
+                    importRunning = false;
                 }
             };
             await _channel.BasicConsumeAsync(queue: "harvesters",
@@ -133,9 +170,23 @@ namespace komikaan.Harvester.Contexts
             }
         }
 
-        public Task StopAsync(CancellationToken cancellationToken)
+        public async Task StopAsync(CancellationToken cancellationToken)
         {
-            return Task.CompletedTask;
+            try
+            {
+                if (_channel != null)
+                {
+                    await _channel.CloseAsync(cancellationToken);
+                }
+                if (_connection != null)
+                {
+                    await _connection.CloseAsync(cancellationToken);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to cleanly close the RabbitMQ connection");
+            }
         }
 
         private async Task ProcessMessageAsync(ImportRequest item, CancellationToken cancellationToken)
@@ -160,7 +211,14 @@ namespace komikaan.Harvester.Contexts
             catch (Exception err)
             {
                 _logger.LogError(err, "Failed to send a message about a failure");
-                await _discordWebHookClient.SendToDiscordAsync(new DiscordMessage("Unknown failure", Environment.MachineName));
+                try
+                {
+                    await _discordWebHookClient.SendToDiscordAsync(new DiscordMessage("Unknown failure", Environment.MachineName));
+                }
+                catch (Exception fallbackError)
+                {
+                    _logger.LogError(fallbackError, "Failed to send the fallback failure message");
+                }
             }
 
         }

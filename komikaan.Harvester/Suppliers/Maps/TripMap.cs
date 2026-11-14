@@ -16,6 +16,5 @@ public class TripMap : ClassMap<PSQLTrip>
         Map(m => m.BlockId).Name("block_id");
         Map(m => m.ShapeId).Name("shape_id");
         Map(m => m.AccessibilityTypeData).Name("wheelchair_accessible");
-        Map(m => m.BikesAllowedData).Name("bikes_allowed");
     }
 }
