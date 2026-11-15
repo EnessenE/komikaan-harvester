@@ -39,6 +39,8 @@ namespace komikaan.Harvester.Managers
         }
 
 
+
+
         private async Task SendMessageAsync(ImportRequest config, string body)
         {
             try
@@ -102,9 +104,9 @@ namespace komikaan.Harvester.Managers
         }
 
 
-        public Task StopAsync(CancellationToken cancellationToken)
+        public async Task StopAsync(CancellationToken cancellationToken)
         {
-            return Task.CompletedTask;
+            await _gardenerContext.StopAsync(cancellationToken);
         }
     }
 }
