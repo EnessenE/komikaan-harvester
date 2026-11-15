@@ -11,13 +11,19 @@ namespace komikaan.Harvester.Contexts
             _logger = logger;
         }
 
-        public void SendMessage(object item)
+        public Task SendMessageAsync(object item)
         {
+            return Task.CompletedTask;
         }
 
         public Task StartAsync(CancellationToken token)
         {
             _logger.LogInformation("Fake gardener context started");
+            return Task.CompletedTask;
+        }
+
+        public Task StopAsync(CancellationToken token)
+        {
             return Task.CompletedTask;
         }
     }

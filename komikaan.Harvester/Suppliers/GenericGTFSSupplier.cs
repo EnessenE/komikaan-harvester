@@ -277,15 +277,14 @@ public class GenericGTFSSupplier
         }
     }
 
-    private Task NotifyAsync(ImportRequest supplier, List<PSQLStop> stops)
+    private async Task NotifyAsync(ImportRequest supplier, List<PSQLStop> stops)
     {
         _logger.LogInformation("Notifying gardeners");
         foreach (var stop in stops)
         {
-            _gardenerContext.SendMessage(new GardernerNotification() { Stop = stop, Supplier = supplier.Name });
+            await _gardenerContext.SendMessageAsync(new GardernerNotification() { Stop = stop, Supplier = supplier.Name });
 
         }
-        return Task.CompletedTask;
     }
 
 
