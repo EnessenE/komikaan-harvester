@@ -3,6 +3,7 @@
     public interface IGardenerContext
     {
         Task StartAsync(CancellationToken token);
-        void SendMessage(object item);
+        Task SendMessageAsync(object item);
+        Task StopAsync(CancellationToken token);
     }
 }

@@ -60,21 +60,41 @@ namespace komikaan.Harvester.Contexts
 
         private async Task StartDetector()
         {
-            _logger.LogInformation("Connecting to detector queue");
-            var factory = new ConnectionFactory();
+            // Retry until the broker and its topology are up; in k8s the operator may
+            // create the exchange/queue after this pod starts, so a single attempt can fail.
+            var attempt = 0;
+            while (!_stoppingToken.IsCancellationRequested)
+            {
+                try
+                {
+                    attempt++;
+                    _logger.LogInformation("Connecting to detector queue (attempt {attempt})", attempt);
+                    var factory = RabbitMQConnectionFactory.Build(_configuration);
+                    var connection = await factory.CreateConnectionAsync(_stoppingToken);
+                    connection.ConnectionShutdownAsync += (_, ea) =>
+                    {
+                        _logger.LogWarning("Detector RabbitMQ connection shut down: {reason}", ea.ReplyText);
+                        return Task.CompletedTask;
+                    };
+                    connection.RecoverySucceededAsync += (_, _) =>
+                    {
+                        _logger.LogInformation("Detector RabbitMQ connection recovered");
+                        return Task.CompletedTask;
+                    };
+                    _connection = connection;
+                    _channel = await connection.CreateChannelAsync();
+                    await _channel.BasicQosAsync(0, 1, false);
 
-            factory.HostName = _configuration.GetValue<string>("RabbitMQHost")!;
-            factory.UserName = _configuration.GetValue<string>("RabbitMQUsername")!;
-            factory.Password = _configuration.GetValue<string>("RabbitMQPassword")!;
-            factory.RequestedConnectionTimeout = TimeSpan.FromHours(3);
-            var connection = await factory.CreateConnectionAsync();
-            _connection = connection;
-            _channel = await connection.CreateChannelAsync();
-            await _channel.BasicQosAsync(0, 1, false);
-            _channel.ContinuationTimeout = TimeSpan.FromHours(3);
-
-            await _channel.ExchangeDeclarePassiveAsync("harvester-notifications");
-            await _channel.QueueDeclarePassiveAsync(queue: "harvesters");
+                    await _channel.ExchangeDeclarePassiveAsync("harvester-notifications");
+                    await _channel.QueueDeclarePassiveAsync(queue: "harvesters");
+                    break;
+                }
+                catch (Exception ex) when (!_stoppingToken.IsCancellationRequested)
+                {
+                    _logger.LogWarning(ex, "Could not connect to detector queue (attempt {attempt}), retrying in 10s", attempt);
+                    await Task.Delay(TimeSpan.FromSeconds(10), _stoppingToken);
+                }
+            }
 
             var consumer = new AsyncEventingBasicConsumer(_channel);
             var importRunning = false;
