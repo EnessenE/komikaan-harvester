@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.8.1] - 15-11-2026
+### Fixed
+- RabbitMQ connections no longer die silently: connect/continuation timeouts were 3 hours (a half-dead connection hung all ack/nack/consume calls without error); now 30s with a 60s heartbeat and automatic + topology recovery
+- `DetectorContext` and `GardenerContext` retry connecting until the broker and its exchange/queue are up, instead of failing the hosted service on the first attempt; connection shutdown/recovery is now logged
+- `GardenerContext` keeps the connection in a field and publishes garden notifications async with an open-channel guard, instead of sync-over-async fire-and-forget that silently dropped notifications when the channel was down
+
 ## [2.8.0] - 14-11-2026
 ### Fixed
 - `RouteMap` mapped `RouteType`, which pushed every value through the ExtendedRouteType conversion (e.g. bus 3 became 700, extended types like 1702 were lost). Now maps the raw `route_type` int so `routes.type` keeps the feed value
