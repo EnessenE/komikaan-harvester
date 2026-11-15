@@ -6,13 +6,12 @@ namespace komikaan.Harvester.Suppliers;
 
 public class GtfsTimeConverter : ITypeConverter
 {
-    public object ConvertFromString(string text, IReaderRow row, MemberMapData memberMapData)
+    public object? ConvertFromString(string? text, IReaderRow row, MemberMapData memberMapData)
     {
         if (string.IsNullOrWhiteSpace(text))
         {
-            // Return default TimeSpan (00:00:00) if the field is empty.
-            // Or throw an exception if time is always required.
-            return default(TimeSpan);
+            // Empty GTFS times mean "interpolated", store NULL instead of 00:00:00
+            return null;
         }
 
         var parts = text.Split(':');
@@ -35,7 +34,7 @@ public class GtfsTimeConverter : ITypeConverter
         }
     }
 
-    public string ConvertToString(object value, IWriterRow row, MemberMapData memberMapData)
+    public string? ConvertToString(object? value, IWriterRow row, MemberMapData memberMapData)
     {
         if (value is TimeSpan ts)
         {

@@ -1,5 +1,32 @@
 # Changelog
 
+## [2.8.0] - 14-11-2026
+### Fixed
+- `RouteMap` mapped `RouteType`, which pushed every value through the ExtendedRouteType conversion (e.g. bus 3 became 700, extended types like 1702 were lost). Now maps the raw `route_type` int so `routes.type` keeps the feed value
+- `PSQLStop.StopTypeData` was hardcoded to 7 (funicular) for every stop via a shadowed property; now derives from `location_type` (default 0) as the gardener later overwrites it with the served route type
+- `PSQLStopTime.DepartureTimeData` getter checked `ArrivalTime` instead of `DepartureTime`, so >24h departure times were not split into `days_since_start_departure` and would overflow the PG `time` column
+- Empty GTFS times (`arrival_time`/`departure_time`) were imported as 00:00:00 instead of NULL; `GtfsTimeConverter` now returns null for empty values
+- Failed feed downloads (non-success status, empty body, missing local zip) no longer continue into extraction and crash with "Sequence contains no elements"; they throw a clear error so the import is marked failed
+- stop_times partition cleanup never matched anything because the LIKE pattern escaped the trailing `%` wildcard into a literal percent; old partitions are now actually dropped after an import
+- DetectorContext now drops (acks) unparseable/empty queue messages instead of redelivering them forever, and closes the RabbitMQ channel/connection on shutdown
+- Removed `Directory.CreateDirectory("/app")` and the bogus `File.Delete("\\\\app\\\\gtfs_file.zip")` from the harvest loop; the working dirs are cleared at the start of each import
+- stop_times partition names are now built as `<prefix>_<import_id>` with the prefix capped at 25 chars, so the name always fits the 63-byte PG identifier limit. Previously the whole name was truncated to 62 chars; for supplier names whose sanitized form is >=62 chars the import id was cut off entirely, every import produced the same partition name, `CREATE TABLE IF NOT EXISTS` kept the old range and the second import failed with "no partition of relation stop_times found"
+- When sanitization changes the supplier name (e.g. "gob.es"), a short SHA-256 hash of the raw name is now part of the partition prefix. Suppliers that sanitize to the same string (e.g. "gob.es" and "gob_es") previously dropped each other's live stop_times partitions during cleanup, losing the other supplier's data until its next import
+- Duplicate rows inside one upsert chunk are now filtered by conflict key for all MERGE / `ON CONFLICT DO UPDATE` targets (agencies, routes, calendars, frequencies), not just stops. A single duplicated route_id/service_id/trip_id row previously failed the whole chunk with "ON CONFLICT DO UPDATE command cannot affect row a second time"
+- A failing Discord webhook can no longer fail an import or skip DB bookkeeping: notifications in `HarvestingManager` are guarded by try/catch and failure marking (`harvester_mark_supplier_failed`) runs before notifying; `DetectorContext` resets its `importRunning` flag in a `finally` and requeues the message on unexpected errors instead of wedging the consumer forever
+- GTFS zips that wrap all txt files in a single top-level folder are now handled by descending into that folder after extraction; previously the import aborted because `routes.txt`/`stops.txt` were not found at the extraction root
+
+### Added
+- Import `frequencies.txt` end-to-end (new `PSQLFrequency` adapter + `FrequencyMap` + `upsert_frequencies` call); >24h start/end times are wrapped to time-of-day since the type has no days column
+
+### Changed
+- `UpsertEntityAsync` reuses one DB connection per upsert instead of opening one per chunk; partition name is sanitized to `[A-Za-z0-9_]` and supplier names are escaped in SQL literals
+- Partition cleanup now matches on the same capped prefix used to build the partition name. Note: partitions created before this change for supplier names containing punctuation (now hash-suffixed) are not matched by the new pattern and will linger as empty tables once; their rows are still removed by `move_to_new_import`
+- `StopTimeMap` is now explicitly `ClassMap<PSQLStopTime>`; removed duplicate `shape_id` mapping in `ShapeMap` and the `bikes_allowed` mapping (trips_type has no such column)
+
+### Removed
+- Dead code: duplicate `Enums/` folder, unused `ISupplier`, unused `GetTypeMappingsAsync`/`SupplierTypeMapping`, empty `Helpers/` folder include, dead `Mask`/`BikesAllowedData` properties, stale comments
+
 ## [2.7.0] - 14-11-2026
 ### Changed
 - Bump all NuGet dependencies to their latest versions (RabbitMQ.Client 7.x required migrating to the async channel API; CsvHelper pinned to 33.1.0 because 34.x is a breaking rewrite)

@@ -4,7 +4,7 @@ using komikaan.Harvester.Models;
 namespace komikaan.GTFS.Models.Static.Models
 {
     /// <summary>
-    /// PostgreSQL version of CalendarDate with direct mappings for DB columns and import metadata.
+    /// PostgreSQL version of Route with direct mappings for DB columns and import metadata.
     /// </summary>
     public class PSQLRoute : Route
     {

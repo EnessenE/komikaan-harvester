@@ -21,12 +21,12 @@ namespace komikaan.Harvester.Suppliers;
 public class GenericGTFSSupplier
 {
     private readonly DiscordWebhookClient _discordWebHookClient;
-    private ILogger<GenericGTFSSupplier> _logger;
-    private static DirectoryInfo _rawPath;
-    private static DirectoryInfo _dataPath;
-    private IDataContext _dataContext;
-    private GTFSContext _gtfsContext;
-    private IGardenerContext _gardenerContext;
+    private readonly ILogger<GenericGTFSSupplier> _logger;
+    private DirectoryInfo _rawPath = null!;
+    private DirectoryInfo _dataPath = null!;
+    private readonly IDataContext _dataContext;
+    private readonly GTFSContext _gtfsContext;
+    private readonly IGardenerContext _gardenerContext;
     private readonly HttpClient _httpClient;
 
     public GenericGTFSSupplier(DiscordWebhookClient discordWebhookClient, ILogger<GenericGTFSSupplier> logger, IDataContext dataContext, GTFSContext gtfsContext, IGardenerContext gardenerContext, HttpClient httpClient, IOptions<KomikaanSettings> komikaanSettings)
@@ -54,9 +54,16 @@ public class GenericGTFSSupplier
 
         await DownloadFeed(supplierConfig, token);
 
+        var zipFile = _rawPath.GetFiles().FirstOrDefault();
+        if (zipFile == null)
+        {
+            throw new InvalidDataException($"No GTFS zip file was downloaded for {supplierConfig.Name}, aborting import");
+        }
+
         await _dataContext.UpdateImportStatusAsync(supplierConfig, "Extracting files");
 
-        ZipFile.ExtractToDirectory(_rawPath.GetFiles().First().FullName, _dataPath.FullName);
+        ZipFile.ExtractToDirectory(zipFile.FullName, _dataPath.FullName);
+        ResolveDataPath();
         await _dataContext.UpdateImportStatusAsync(supplierConfig, "Extracting complete, starting reading");
         var config = new CsvConfiguration(CultureInfo.InvariantCulture)
         {
@@ -71,14 +78,14 @@ public class GenericGTFSSupplier
         await LogMessage(supplierConfig, "Reading agencies", false);
 
         var stopwatch = Stopwatch.StartNew();
-        if (File.Exists($@"{_dataPath.FullName}/agency.txt"))
+        if (FeedFileExists("agency.txt"))
         {
-            using (var reader = new StreamReader($@"{_dataPath.FullName}/agency.txt"))
+            using (var reader = OpenFeedFile("agency.txt"))
             {
                 await LogMessage(supplierConfig, "Importing agencies", false);
                 using (var csv = new CsvReader(reader, config))
                 {
-                    _logger.LogInformation($"Found a file with {csv?.ColumnCount} columns");
+                    _logger.LogInformation($"Found a file with {csv.ColumnCount} columns");
                     csv.Context.RegisterClassMap<AgencyMap>();
                     var records = csv.GetRecordsAsync<PSQLAgency>();
                     await _gtfsContext.UpsertAgenciesAsync(supplierConfig, records, token);
@@ -86,10 +93,10 @@ public class GenericGTFSSupplier
             }
         }
 
-        if (File.Exists($@"{_dataPath.FullName}/stop_times.txt"))
+        if (FeedFileExists("stop_times.txt"))
         {
             await LogMessage(supplierConfig, "Reading stop_times", false);
-            using (var reader = new StreamReader($@"{_dataPath.FullName}/stop_times.txt"))
+            using (var reader = OpenFeedFile("stop_times.txt"))
             {
                 using (var csv = new CsvReader(reader, config))
                 {
@@ -101,11 +108,11 @@ public class GenericGTFSSupplier
             }
         }
 
-        if (File.Exists($@"{_dataPath.FullName}/calendar_dates.txt"))
+        if (FeedFileExists("calendar_dates.txt"))
         {
             stopwatch.Restart();
             await LogMessage(supplierConfig, "Reading calendar_dates", false);
-            using (var reader = new StreamReader($@"{_dataPath.FullName}/calendar_dates.txt"))
+            using (var reader = OpenFeedFile("calendar_dates.txt"))
             {
                 await LogMessage(supplierConfig, "Importing calendar_dates", false);
                 using (var csv = new CsvReader(reader, config))
@@ -121,7 +128,7 @@ public class GenericGTFSSupplier
 
         stopwatch.Restart();
         await LogMessage(supplierConfig, "Reading routes", false);
-        using (var reader = new StreamReader($@"{_dataPath.FullName}/routes.txt"))
+        using (var reader = OpenRequiredFeedFile("routes.txt"))
         {
             await LogMessage(supplierConfig, "Importing routes", false);
             using (var csv = new CsvReader(reader, config))
@@ -133,7 +140,7 @@ public class GenericGTFSSupplier
         }
         stopwatch.Restart();
         await LogMessage(supplierConfig, "Reading trips", false);
-        using (var reader = new StreamReader($@"{_dataPath.FullName}/trips.txt"))
+        using (var reader = OpenRequiredFeedFile("trips.txt"))
         {
             await LogMessage(supplierConfig, "Importing trips", false);
             using (var csv = new CsvReader(reader, config))
@@ -146,10 +153,10 @@ public class GenericGTFSSupplier
 
 
 
-        //Stops should be after stoptimes, trips and routes as those are used to determine some on-the-fly data
+        //Stops should be after stoptimes, trips and routes as those are used by the gardener to determine on-the-fly data
         stopwatch.Restart();
         await LogMessage(supplierConfig, "Reading stops", false);
-        using (var reader = new StreamReader($@"{_dataPath.FullName}/stops.txt"))
+        using (var reader = OpenRequiredFeedFile("stops.txt"))
         {
             await LogMessage(supplierConfig, "Importing stops", false);
             using (var csv = new CsvReader(reader, config))
@@ -167,10 +174,10 @@ public class GenericGTFSSupplier
         }
 
         stopwatch.Restart();
-        if (File.Exists($@"{_dataPath.FullName}/shapes.txt"))
+        if (FeedFileExists("shapes.txt"))
         {
             await LogMessage(supplierConfig, "Reading shapes", false);
-            using (var reader = new StreamReader($@"{_dataPath.FullName}/shapes.txt"))
+            using (var reader = OpenFeedFile("shapes.txt"))
             {
                 await LogMessage(supplierConfig, "Importing shapes", false);
                 using (var csv = new CsvReader(reader, config))
@@ -182,11 +189,11 @@ public class GenericGTFSSupplier
             }
         }
         stopwatch.Restart();
-        if (File.Exists($@"{_dataPath.FullName}/calendar.txt"))
+        if (FeedFileExists("calendar.txt"))
         {
             await LogMessage(supplierConfig, "Reading calendar", false);
 
-            using (var reader = new StreamReader($@"{_dataPath.FullName}/calendar.txt"))
+            using (var reader = OpenFeedFile("calendar.txt"))
             {
                 await LogMessage(supplierConfig, "Importing calendar", false);
                 using (var csv = new CsvReader(reader, config))
@@ -202,7 +209,62 @@ public class GenericGTFSSupplier
             _logger.LogInformation("No calendar.txt, next");
         }
 
+        stopwatch.Restart();
+        if (FeedFileExists("frequencies.txt"))
+        {
+            await LogMessage(supplierConfig, "Reading frequencies", false);
+            using (var reader = OpenFeedFile("frequencies.txt"))
+            {
+                await LogMessage(supplierConfig, "Importing frequencies", false);
+                using (var csv = new CsvReader(reader, config))
+                {
+                    csv.Context.RegisterClassMap<FrequencyMap>();
+                    var records = csv.GetRecordsAsync<PSQLFrequency>();
+                    await _gtfsContext.UpsertFrequenciesAsync(supplierConfig, records, token);
+                }
+            }
+        }
+
         await LogMessage(supplierConfig, "Success", false);
+    }
+
+    /// <summary>
+    /// Some feeds wrap all txt files in a single top-level folder inside the zip; descend into it
+    /// so the feed files are found at the root of <see cref="_dataPath"/>.
+    /// </summary>
+    private void ResolveDataPath()
+    {
+        var dir = _dataPath;
+        while (dir.GetFiles("*.txt").Length == 0)
+        {
+            var subDirs = dir.GetDirectories();
+            if (subDirs.Length != 1)
+            {
+                break;
+            }
+            dir = subDirs[0];
+        }
+
+        if (dir.GetFiles("*.txt").Length == 0)
+        {
+            throw new InvalidDataException($"No GTFS .txt files found in the zip of {StaticImportData.CurrentDataOrigin}");
+        }
+
+        _dataPath = dir;
+    }
+
+    private bool FeedFileExists(string fileName) => File.Exists(Path.Combine(_dataPath.FullName, fileName));
+
+    private StreamReader OpenFeedFile(string fileName) => new(Path.Combine(_dataPath.FullName, fileName));
+
+    private StreamReader OpenRequiredFeedFile(string fileName)
+    {
+        var path = Path.Combine(_dataPath.FullName, fileName);
+        if (!File.Exists(path))
+        {
+            throw new FileNotFoundException($"Required GTFS file '{fileName}' is missing in the feed of {StaticImportData.CurrentDataOrigin}", path);
+        }
+        return new StreamReader(path);
     }
 
     private async Task LogMessage(ImportRequest supplierConfig, string message, bool discord)
@@ -272,33 +334,33 @@ public class GenericGTFSSupplier
 
             var response = await _httpClient.SendAsync(request, cancellationToken);
 
-            if (response.IsSuccessStatusCode)
-            {
-                var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
-                if (data != null)
-                {
-                    await File.WriteAllBytesAsync(_rawPath + @"/gtfs_file.zip", data, cancellationToken);
-                    await _dataContext.UpdateImportStatusAsync(supplier, "Feed download complete");
-                }
-                else
-                {
-                    _logger.LogWarning("Code: {StatusCode} but no data received from feed", response.StatusCode);
-                    await _dataContext.UpdateImportStatusAsync(supplier, $"Code: {response.StatusCode} but no data received from feed");
-                }
-            }
-            else
+            if (!response.IsSuccessStatusCode)
             {
                 _logger.LogWarning("Failed to download feed. Status code: {statusCode}, Error: {errorMessage}",
                     response.StatusCode, response.ReasonPhrase);
-
                 await _dataContext.UpdateImportStatusAsync(supplier,
                     $"Download failed. Status code: {response.StatusCode}");
+                throw new HttpRequestException($"Download of {supplier.Url} failed with status code {(int)response.StatusCode} ({response.ReasonPhrase})");
             }
+
+            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+            if (data.Length == 0)
+            {
+                await _dataContext.UpdateImportStatusAsync(supplier, $"Code: {response.StatusCode} but no data received from feed");
+                throw new InvalidDataException($"Download of {supplier.Url} returned an empty body");
+            }
+
+            await File.WriteAllBytesAsync(Path.Combine(_rawPath.FullName, "gtfs_file.zip"), data, cancellationToken);
+            await _dataContext.UpdateImportStatusAsync(supplier, "Feed download complete");
         }
         else if (supplier.RetrievalType == RetrievalType.LOCAL)
         {
+            if (!File.Exists(supplier.Url))
+            {
+                throw new FileNotFoundException($"Local GTFS zip '{supplier.Url}' does not exist", supplier.Url);
+            }
             await _dataContext.UpdateImportStatusAsync(supplier, "Copying feed");
-            File.Copy(supplier.Url, _rawPath + @"/gtfs_file.zip");
+            File.Copy(supplier.Url, Path.Combine(_rawPath.FullName, "gtfs_file.zip"), overwrite: true);
         }
         else
         {
