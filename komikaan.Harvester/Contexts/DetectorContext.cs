@@ -139,16 +139,9 @@ namespace komikaan.Harvester.Contexts
 
                     using (_logger.BeginScope("{name} - {import}", item.Name, item.QueuedImportId))
                     {
-                        if (DateTimeOffset.UtcNow - item.ImportRequestedAt > item.DelayImportBy)
-                        {
-                            await StartImport(ea, item, _stoppingToken);
-                        }
-                        else
-                        {
-                            _logger.LogInformation($"{item.Name} - {item.QueuedImportId} is being artifically delayed as it was requested at {item.ImportRequestedAt:R} but delayed by {item.DelayImportBy}");
-                            await Task.Delay(TimeSpan.FromMinutes(1), _stoppingToken);
-                            await _channel.BasicNackAsync(ea.DeliveryTag, false, true);
-                        }
+                        // Delayed imports are held by the broker (RabbitMQ 4.4 x-opt-delivery-time
+                        // on the quorum queue, set by the publisher), so anything delivered here is due.
+                        await StartImport(ea, item, _stoppingToken);
                     }
                 }
                 catch (Exception ex)
