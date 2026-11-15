@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.8.3] - 15-11-2026
+### Changed
+- Removed the artificial delay loop: the detector no longer holds a not-yet-due import request in memory (`Task.Delay` + nack/requeue every minute). The publisher now sets RabbitMQ 4.4's `x-opt-delivery-time` header on the quorum queue, so the broker only delivers the request when it is due
+
 ## [2.8.2] - 15-11-2026
 ### Fixed
 - Feed downloads now handle server-side compression: the HttpClient uses `AutomaticDecompression = All`, so a forced `Content-Encoding: gzip/br` response no longer ends up saved as a corrupt zip; downloads stream to disk (no full in-memory buffering, no 100s default timeout) and the payload is validated against the PK zip magic with a clear error
