@@ -1,5 +1,4 @@
-﻿using komikaan.GTFS.Extensions;
-using komikaan.GTFS.Models.Static.Enums;
+﻿using komikaan.GTFS.Models.Static.Enums;
 using komikaan.Harvester.Models;
 
 namespace komikaan.GTFS.Models.Static.Models
@@ -45,16 +44,9 @@ namespace komikaan.GTFS.Models.Static.Models
         public string? TextColor { get => RouteTextColor; set => RouteTextColor = value; }
 
         /// <summary>
-        /// Maps GTFS RouteType to routes_type.route_type. Classic values (0-12) are
-        /// converted to their extended equivalent (100+) so routes.type is always extended.
+        /// Maps GTFS RouteType to routes_type.route_type
         /// </summary>
-        public int RouteTypeData
-        {
-            get => (int)ExtendedRouteType;
-            set => ExtendedRouteType = value < 100 && Enum.IsDefined(typeof(RouteType), value)
-                ? ((RouteType)value).ToExtendedRouteType()
-                : (ExtendedRouteType)value;
-        }
+        public int RouteTypeData { get => (int)ExtendedRouteType; set => ExtendedRouteType = (ExtendedRouteType)value; }
 
         /// <summary>
         /// Maps to routes_type.data_origin
