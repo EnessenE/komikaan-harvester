@@ -57,7 +57,14 @@ namespace komikaan.Harvester
             }
 
 
-            builder.Services.AddHttpClient();
+            // Default client (used for feed downloads): transparently decompress gzip/br/deflate
+            // responses (some CDNs force Content-Encoding even without Accept-Encoding) and don't
+            // time out mid-download — the cancellation token governs the transfer.
+            builder.Services.AddHttpClient(string.Empty, client => client.Timeout = System.Threading.Timeout.InfiniteTimeSpan)
+                .ConfigurePrimaryHttpMessageHandler(() => new System.Net.Http.SocketsHttpHandler
+                {
+                    AutomaticDecompression = System.Net.DecompressionMethods.All
+                });
 
             builder.Services.AddSingleton<GenericGTFSSupplier>();
             builder.Services.AddHostedService<DetectorContext>();

@@ -45,9 +45,10 @@ public class GenericGTFSSupplier
         _httpClient.DefaultRequestHeaders.Add("User-Agent", $"detector/komikaan.nl {GetType().Assembly.GetName().Version} ({contactPoint})");
     }
 
-    public async Task RetrieveFeed(ImportRequest supplierConfig, CancellationToken token)
+    public async Task<List<PSQLStop>> RetrieveFeed(ImportRequest supplierConfig, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
+        List<PSQLStop> importedStops = new();
 
         await _dataContext.UpdateImportStatusAsync(supplierConfig, "Clearing directories");
         CreateClearDirectories();
@@ -93,10 +94,11 @@ public class GenericGTFSSupplier
             }
         }
 
-        if (FeedFileExists("stop_times.txt"))
+        // stop_times.txt is required by the GTFS spec; without it no partition is created for
+        // this import and move_to_new_import would swap in nothing
         {
             await LogMessage(supplierConfig, "Reading stop_times", false);
-            using (var reader = OpenFeedFile("stop_times.txt"))
+            using (var reader = OpenRequiredFeedFile("stop_times.txt"))
             {
                 using (var csv = new CsvReader(reader, config))
                 {
@@ -169,7 +171,7 @@ public class GenericGTFSSupplier
                 }
 
                 await _gtfsContext.UpsertStopsAsync(supplierConfig, ToAsyncEnumerable(stops, token), token);
-                await NotifyAsync(supplierConfig, stops);
+                importedStops = stops;
             }
         }
 
@@ -226,6 +228,7 @@ public class GenericGTFSSupplier
         }
 
         await LogMessage(supplierConfig, "Success", false);
+        return importedStops;
     }
 
     /// <summary>
@@ -277,7 +280,11 @@ public class GenericGTFSSupplier
         }
     }
 
-    private async Task NotifyAsync(ImportRequest supplier, List<PSQLStop> stops)
+    /// <summary>
+    /// Sends one garden notification per imported stop. Call this after the new import has been
+    /// swapped in (move_to_new_import), so merge_stop sees the new stop_times partition.
+    /// </summary>
+    public async Task NotifyGardenersAsync(ImportRequest supplier, List<PSQLStop> stops)
     {
         _logger.LogInformation("Notifying gardeners");
         foreach (var stop in stops)
@@ -331,7 +338,9 @@ public class GenericGTFSSupplier
 
             _logger.LogInformation("Request generated towards {url}", supplier.Url);
 
-            var response = await _httpClient.SendAsync(request, cancellationToken);
+            // Stream to disk instead of buffering the whole body in memory; the HttpClient handler
+            // has AutomaticDecompression = All, so Content-Encoding: gzip/br/deflate is handled.
+            using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -342,14 +351,32 @@ public class GenericGTFSSupplier
                 throw new HttpRequestException($"Download of {supplier.Url} failed with status code {(int)response.StatusCode} ({response.ReasonPhrase})");
             }
 
-            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
-            if (data.Length == 0)
+            var targetPath = Path.Combine(_rawPath.FullName, "gtfs_file.zip");
+            await using (var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken))
+            await using (var fileStream = File.Create(targetPath))
+            {
+                await contentStream.CopyToAsync(fileStream, cancellationToken);
+            }
+
+            var fileInfo = new FileInfo(targetPath);
+            if (fileInfo.Length == 0)
             {
                 await _dataContext.UpdateImportStatusAsync(supplier, $"Code: {response.StatusCode} but no data received from feed");
                 throw new InvalidDataException($"Download of {supplier.Url} returned an empty body");
             }
 
-            await File.WriteAllBytesAsync(Path.Combine(_rawPath.FullName, "gtfs_file.zip"), data, cancellationToken);
+            // a zip always starts with the PK magic; anything else (html error page, still-compressed bytes) fails fast with a clear message
+            await using (var check = File.OpenRead(targetPath))
+            {
+                var magic = new byte[2];
+                if (await check.ReadAsync(magic, cancellationToken) < 2 || magic[0] != 'P' || magic[1] != 'K')
+                {
+                    var encoding = response.Content.Headers.ContentEncoding.FirstOrDefault() ?? "none";
+                    await _dataContext.UpdateImportStatusAsync(supplier, "Downloaded content is not a zip file");
+                    throw new InvalidDataException($"Download of {supplier.Url} did not return a zip file (content-encoding: {encoding}, status {response.StatusCode})");
+                }
+            }
+
             await _dataContext.UpdateImportStatusAsync(supplier, "Feed download complete");
         }
         else if (supplier.RetrievalType == RetrievalType.LOCAL)

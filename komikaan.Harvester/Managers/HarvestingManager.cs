@@ -68,12 +68,14 @@ namespace komikaan.Harvester.Managers
                 var stopwatch = Stopwatch.StartNew();
                 _logger.LogInformation("Starting import from {supplier}", config.Name);
                 await SendMessageAsync(config, "Starting import, getting feed info");
-                await _genericGTFSSupplier.RetrieveFeed(config, cancellationToken);
+                var importedStops = await _genericGTFSSupplier.RetrieveFeed(config, cancellationToken);
                 _logger.LogInformation("Finished importing data in {time} from {supplier}", stopwatch.Elapsed.ToString("g"), config.Name);
                 await SendMessageAsync(config, $"Starting building new data at {stopwatch.Elapsed:g}...");
                 await _dataContext.BuildGTFSDatesAsync(config);
                 await SendMessageAsync(config, $"Finished building at {stopwatch.Elapsed:g}. Starting to delete old data");
                 await _dataContext.DeleteOldDataAsync(config);
+                // notify gardeners only after the new import (incl. the stop_times partition) is live
+                await _genericGTFSSupplier.NotifyGardenersAsync(config, importedStops);
                 await SendMessageAsync(config, "Finished cleaning up old data, marking as complete.");
                 await _dataContext.MarkSuccessImportAsync(config);
                 _logger.LogInformation("Finished import in {time}", stopwatch.Elapsed.ToString("g"));
