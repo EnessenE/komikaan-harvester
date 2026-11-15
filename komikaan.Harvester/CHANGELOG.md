@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.8.2] - 15-11-2026
+### Fixed
+- Feed downloads now handle server-side compression: the HttpClient uses `AutomaticDecompression = All`, so a forced `Content-Encoding: gzip/br` response no longer ends up saved as a corrupt zip; downloads stream to disk (no full in-memory buffering, no 100s default timeout) and the payload is validated against the PK zip magic with a clear error
+- `stop_times.txt` is now treated as required (per the GTFS spec); a feed without it no longer completes the import with no stop_times partition, which would have broken the partition swap in `move_to_new_import`
+- Garden notifications are sent after `move_to_new_import` swaps the new stop_times partition live, so `merge_stop` no longer derives `stop_type` from the old partition for brand-new stops
+
 ## [2.8.1] - 15-11-2026
 ### Fixed
 - RabbitMQ connections no longer die silently: connect/continuation timeouts were 3 hours (a half-dead connection hung all ack/nack/consume calls without error); now 30s with a 60s heartbeat and automatic + topology recovery
