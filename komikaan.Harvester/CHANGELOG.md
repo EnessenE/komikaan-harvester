@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.8.4] - 16-11-2026
+### Fixed
+- The harvester consumer no longer gets silently cancelled by RabbitMQ's 30-minute `consumer_timeout` during long imports. Root cause: with the default consumer dispatch concurrency of 1, the `if (importRunning)` nack-requeue branch never executed while an import was running, so the next delivery (sent immediately because prefetch=1 freed up after the ack-first) sat unacknowledged for the whole import (2h35m for bus-data-gov-uk on 2026-11-15); at 18:07:37 the broker cancelled the consumer and the pod consumed nothing for ~22h while feeds piled up as "Import pending". The channel is now created with `consumerDispatchConcurrency: 2` so the early-message handler runs during an import, and it nack-requeues the straggler every 20s (well under the 30-min timeout): the message stays in RabbitMQ, the broker's ack timer resets on every redelivery, and once the import finishes the message is redelivered and processed for real. The running-import flag is claimed atomically (`Interlocked.CompareExchange`) because handlers can now run concurrently
+
 ## [2.8.3] - 15-11-2026
 ### Changed
 - Removed the artificial delay loop: the detector no longer holds a not-yet-due import request in memory (`Task.Delay` + nack/requeue every minute). The publisher now sets RabbitMQ 4.4's `x-opt-delivery-time` header on the quorum queue, so the broker only delivers the request when it is due
