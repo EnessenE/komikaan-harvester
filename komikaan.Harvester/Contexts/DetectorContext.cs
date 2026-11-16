@@ -20,6 +20,7 @@ namespace komikaan.Harvester.Contexts
         private readonly IDataContext _dataContext;
         private readonly IConfiguration _configuration;
         private CancellationToken _stoppingToken;
+        private int _importRunning;
 
         public DetectorContext(ILogger<DetectorContext> logger, HarvestingManager harvestingManager, DiscordWebhookClient discordWebHookClient, IConfiguration configuration, IDataContext dataContext)
         {
@@ -82,7 +83,12 @@ namespace komikaan.Harvester.Contexts
                         return Task.CompletedTask;
                     };
                     _connection = connection;
-                    _channel = await connection.CreateChannelAsync();
+                    // Dispatch deliveries on 2 workers so the "early message" handler below can
+                    // run (and nack-requeue) while another worker is busy with a long import.
+                    _channel = await connection.CreateChannelAsync(new CreateChannelOptions(
+                        publisherConfirmationsEnabled: false,
+                        publisherConfirmationTrackingEnabled: false,
+                        consumerDispatchConcurrency: 2));
                     await _channel.BasicQosAsync(0, 1, false);
 
                     await _channel.ExchangeDeclarePassiveAsync("harvester-notifications");
@@ -97,21 +103,28 @@ namespace komikaan.Harvester.Contexts
             }
 
             var consumer = new AsyncEventingBasicConsumer(_channel);
-            var importRunning = false;
             consumer.ReceivedAsync += async (model, ea) =>
             {
-                if (importRunning)
+                if (Interlocked.CompareExchange(ref _importRunning, 1, 0) != 0)
                 {
-                    //This is a hack because I want to use RabbitMQ and that doesn't like long running tasks
-                    //note: Why don't you just close the consumer?
-                    //quick look over there!
-                    _logger.LogInformation("Got an early message, waiting and NACKing and requeuing it");
-                    await Task.Delay(TimeSpan.FromMinutes(1), _stoppingToken);
-                    await _channel.BasicNackAsync(ea.DeliveryTag, false, true);
+                    // An import is already running on this pod. With prefetch=1 the broker delivered
+                    // this next message right after the current one was acked; left alone it would sit
+                    // unacknowledged for the whole import and trip consumer_timeout (30 min). Nack-requeue
+                    // it every 20s instead: it stays in RabbitMQ and the broker's ack timer resets on every
+                    // redelivery. Once the import finishes, the message is redelivered and processed for real.
+                    _logger.LogInformation("Got an early message, NACKing and requeuing it every 20s until the current import is done");
+                    try
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(20), _stoppingToken);
+                        await _channel.BasicNackAsync(ea.DeliveryTag, false, true);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to NACK/requeue an early message");
+                    }
                     return;
                 }
 
-                importRunning = true;
                 try
                 {
                     _logger.LogInformation("Received a message!");
@@ -146,7 +159,7 @@ namespace komikaan.Harvester.Contexts
                 }
                 catch (Exception ex)
                 {
-                    // Never leave importRunning stuck: requeue the message so it is retried later
+                    // Never leave _importRunning stuck: requeue the message so it is retried later
                     _logger.LogError(ex, "Unexpected error while handling an import request, requeueing it");
                     try
                     {
@@ -159,7 +172,7 @@ namespace komikaan.Harvester.Contexts
                 }
                 finally
                 {
-                    importRunning = false;
+                    Interlocked.Exchange(ref _importRunning, 0);
                 }
             };
             await _channel.BasicConsumeAsync(queue: "harvesters",
